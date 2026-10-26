@@ -1,0 +1,394 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "JobBuddy Scraper Configuration Schema",
+    "description": "Modular configuration schema organized into distinct, self-contained sections.",
+    "type": "object",
+    "required": [
+        "locations",
+        "experience",
+        "skills",
+        "categories",
+        "hard_rejection_rules",
+        "ai_models",
+        "database",
+        "runner"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "_comment": {
+            "type": "string"
+        },
+        "locations": {
+            "type": "object",
+            "description": "Location preferences, remote filters, and international visa sponsorship rules.",
+            "required": [
+                "primary_country",
+                "allowed_cities",
+                "remote_rules",
+                "international_visa_rules"
+            ],
+            "properties": {
+                "primary_country": {
+                    "type": "string",
+                    "description": "Home country of candidate (default: 'India')."
+                },
+                "allowed_cities": {
+                    "type": "array",
+                    "description": "Target cities or 'All India' to accept all national tech hubs, or 'Remote Only'.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "indian_tech_hubs": {
+                    "type": "array",
+                    "description": "Recognized tech hubs and states in India.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "remote_rules": {
+                    "type": "object",
+                    "description": "Remote work eligibility controls.",
+                    "required": [
+                        "allow_worldwide_remote",
+                        "reject_region_locked_remote"
+                    ],
+                    "properties": {
+                        "allow_worldwide_remote": {
+                            "type": "boolean",
+                            "description": "Accept genuine worldwide / global remote jobs."
+                        },
+                        "reject_region_locked_remote": {
+                            "type": "boolean",
+                            "description": "Reject remote roles restricted to US, Canada, EU, LATAM, etc."
+                        },
+                        "restricted_regions": {
+                            "type": "array",
+                            "description": "Keywords identifying foreign-locked remote roles.",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "restricted_timezones": {
+                            "type": "array",
+                            "description": "Timezone strings indicating region-locked roles.",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "international_visa_rules": {
+                    "type": "object",
+                    "description": "Rules for international roles and visa sponsorship.",
+                    "required": [
+                        "accept_foreign_roles_only_if_sponsored",
+                        "accept_visa_sponsorship",
+                        "allow_japan_tech_pending_stage2"
+                    ],
+                    "properties": {
+                        "accept_foreign_roles_only_if_sponsored": {
+                            "type": "boolean",
+                            "description": "Foreign/US roles are rejected unless they explicitly state visa sponsorship or relocation."
+                        },
+                        "accept_visa_sponsorship": {
+                            "type": "boolean",
+                            "description": "Accept foreign roles providing visa sponsorship."
+                        },
+                        "accept_relocation_assistance": {
+                            "type": "boolean",
+                            "description": "Accept foreign roles providing relocation assistance."
+                        },
+                        "allow_japan_tech_pending_stage2": {
+                            "type": "boolean",
+                            "description": "Hold Japan tech roles with English titles for Stage 2 deep JD evaluation."
+                        },
+                        "sponsorship_keywords": {
+                            "type": "array",
+                            "description": "Phrases in job postings that confirm visa sponsorship or relocation.",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "experience": {
+            "type": "object",
+            "description": "Experience gates, seniority filters, and safe classification labels.",
+            "required": [
+                "target_level",
+                "min_years",
+                "max_years",
+                "blocked_threshold_years"
+            ],
+            "properties": {
+                "target_level": {
+                    "type": "string",
+                    "enum": [
+                        "fresher",
+                        "junior",
+                        "mid",
+                        "senior",
+                        "any"
+                    ],
+                    "description": "Candidate experience level ('fresher' for 0 YOE)."
+                },
+                "min_years": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Minimum years of professional experience required."
+                },
+                "max_years": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Maximum years of professional experience acceptable."
+                },
+                "blocked_threshold_years": {
+                    "type": "integer",
+                    "description": "Jobs requiring more than this number of years will be BLOCKED in Stage 2."
+                },
+                "delete_blocked_jobs": {
+                    "type": "boolean",
+                    "description": "Delete BLOCKED jobs from MongoDB to save storage and keep the database clean."
+                },
+                "allow_unspecified_experience": {
+                    "type": "boolean",
+                    "description": "Classify jobs without explicit year requirements as POSSIBLE."
+                },
+                "safe_labels": {
+                    "type": "array",
+                    "description": "Keywords confirming 0-experience / entry-level positions.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclude_senior_roles": {
+                    "type": "boolean",
+                    "description": "Exclude Senior/Staff/Principal/Lead/Director titles in Stage 1 pre-filter."
+                },
+                "senior_title_patterns": {
+                    "type": "array",
+                    "description": "Patterns matching senior or leadership titles.",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "skills": {
+            "type": "object",
+            "description": "Candidate role target, target skills, excluded skills, and ATS pre-filter keywords.",
+            "required": [
+                "role_title",
+                "target_skills",
+                "excluded_skills"
+            ],
+            "properties": {
+                "role_title": {
+                    "type": "string",
+                    "description": "Human-readable candidate title (e.g. 'Software Engineer / Tech Professional')."
+                },
+                "target_skills": {
+                    "type": "array",
+                    "description": "Optional list of required skills (e.g. ['React', 'Python']). If empty, all tech roles are included.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "excluded_skills": {
+                    "type": "array",
+                    "description": "List of skills to strictly reject (e.g. ['Salesforce', 'PHP']).",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tech_keywords": {
+                    "type": "array",
+                    "description": "Keywords used to identify technical postings during ATS pre-filtering.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "non_tech_exclude_keywords": {
+                    "type": "array",
+                    "description": "Keywords used to reject non-technical roles (sales, HR, legal, etc.).",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "categories": {
+            "type": "object",
+            "description": "Functional engineering tracks and application portal classification.",
+            "required": [
+                "enabled"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "array",
+                    "description": "Active technical disciplines to collect.",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "software_engineering",
+                            "data_ml",
+                            "devops_cloud",
+                            "cybersecurity",
+                            "product_design",
+                            "other"
+                        ]
+                    }
+                },
+                "auto_classify": {
+                    "type": "boolean",
+                    "description": "Automatically classify jobs into technical tracks."
+                },
+                "detect_early_career_programs": {
+                    "type": "boolean",
+                    "description": "Detect whether a URL is a single job ('direct_apply') or a program portal ('filtered_list')."
+                }
+            }
+        },
+        "hard_rejection_rules": {
+            "type": "object",
+            "description": "Strict legal, security, and authorization disqualifiers.",
+            "properties": {
+                "reject_security_clearance": {
+                    "type": "boolean",
+                    "description": "Reject government security clearance, defense, or ITAR roles."
+                },
+                "reject_domestic_citizenship_only": {
+                    "type": "boolean",
+                    "description": "Reject roles requiring domestic citizenship (e.g. US/UK citizen only)."
+                },
+                "reject_explicit_no_visa_sponsorship": {
+                    "type": "boolean",
+                    "description": "Reject roles that explicitly state 'no visa sponsorship' or 'must be authorized without sponsorship'."
+                },
+                "reject_mandatory_foreign_language": {
+                    "type": "boolean",
+                    "description": "Reject roles requiring non-English language fluency (e.g. JLPT N1/N2, German C1)."
+                },
+                "reject_non_english_titles": {
+                    "type": "boolean",
+                    "description": "Reject postings with non-English characters in the title."
+                }
+            }
+        },
+        "ai_models": {
+            "type": "object",
+            "description": "Gemini AI model pool and rate limit configuration.",
+            "required": [
+                "models",
+                "rpm_limit",
+                "rpd_limit"
+            ],
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "enum": [
+                        "gemini"
+                    ]
+                },
+                "models": {
+                    "type": "array",
+                    "description": "Gemini model fallback chain.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rpm_limit": {
+                    "type": "integer",
+                    "description": "Requests per minute limit per model."
+                },
+                "rpd_limit": {
+                    "type": "integer",
+                    "description": "Requests per day limit per model."
+                },
+                "stage1_chunk_size": {
+                    "type": "integer",
+                    "description": "Number of pre-filtered jobs per Stage 1 Gemini prompt."
+                },
+                "stage1_max_chunks_per_site": {
+                    "type": "integer",
+                    "description": "Maximum chunks evaluated per careers board to cap quota."
+                },
+                "stage2_batch_size": {
+                    "type": "integer",
+                    "description": "Default batch size for Stage 2 JD verification."
+                },
+                "enable_stage1_ai_fallback": {
+                    "type": "boolean",
+                    "description": "If true, falls back to Gemini AI extraction when a career site has no recognized ATS router."
+                }
+            }
+        },
+        "database": {
+            "type": "object",
+            "description": "MongoDB collection names and TTL automated cleanup settings.",
+            "required": [
+                "name",
+                "jobs_collection",
+                "stats_collection",
+                "urls_collection"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Database name."
+                },
+                "jobs_collection": {
+                    "type": "string",
+                    "description": "Collection storing job listings."
+                },
+                "stats_collection": {
+                    "type": "string",
+                    "description": "Collection storing per-site telemetry."
+                },
+                "urls_collection": {
+                    "type": "string",
+                    "description": "Collection storing company target URLs."
+                },
+                "jobs_ttl_days": {
+                    "type": "integer",
+                    "description": "Days before inactive jobs are expired."
+                },
+                "stats_ttl_days": {
+                    "type": "integer",
+                    "description": "Days before telemetry logs are expired."
+                },
+                "blocked_collection": {
+                    "type": "string",
+                    "description": "Collection storing lightweight SHA-256 tombstones of rejected jobs to avoid infinite re-processing loops."
+                }
+            }
+        },
+        "runner": {
+            "type": "object",
+            "description": "Runner fail-safes and pacing controls.",
+            "required": [
+                "max_runtime_minutes",
+                "sleep_between_sites_seconds"
+            ],
+            "properties": {
+                "max_runtime_minutes": {
+                    "type": "integer",
+                    "description": "Fail-safe timeout before graceful shutdown (e.g. 80 mins for CI)."
+                },
+                "sleep_between_sites_seconds": {
+                    "type": "number",
+                    "description": "Polite delay between scraping different company portals."
+                },
+                "sleep_between_stage2_jobs_seconds": {
+                    "type": "number",
+                    "description": "Delay between Stage 2 JD evaluations."
+                }
+            }
+        }
+    }
+}

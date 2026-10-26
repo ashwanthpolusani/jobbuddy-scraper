@@ -1,0 +1,132 @@
+{
+  "locations": {
+    "primary_country": "India",
+    "allowed_cities": [
+      "All India"
+    ],
+    "indian_tech_hubs": [
+      "Bengaluru",
+      "Hyderabad",
+      "Pune",
+      "Mumbai",
+      "Gurugram",
+      "Noida",
+      "Chennai",
+      "Kolkata",
+      "Ahmedabad",
+      "Kochi",
+      "Coimbatore"
+    ],
+    "remote_rules": {
+      "allow_worldwide_remote": true,
+      "reject_region_locked_remote": true,
+      "restricted_regions": [
+        "US Only",
+        "Europe Only",
+        "UK Only",
+        "Canada Only",
+        "LATAM Only",
+        "APAC Only"
+      ],
+      "restricted_timezones": [
+        "PST",
+        "EST",
+        "CST"
+      ]
+    },
+    "international_visa_rules": {
+      "accept_foreign_roles_only_if_sponsored": true,
+      "accept_visa_sponsorship": true,
+      "accept_relocation_assistance": true,
+      "allow_japan_tech_pending_stage2": true,
+      "sponsorship_keywords": [
+        "visa sponsorship",
+        "sponsorship available",
+        "international applicants welcome",
+        "relocation support",
+        "relocation assistance"
+      ]
+    }
+  },
+  "experience": {
+    "target_level": "internship",
+    "internships_only": true,
+    "min_years": 0,
+    "max_years": 0,
+    "blocked_threshold_years": 0,
+    "delete_blocked_jobs": true,
+    "allow_unspecified_experience": false,
+    "safe_labels": [
+      "intern",
+      "internship",
+      "summer intern",
+      "co-op",
+      "apprentice",
+      "student",
+      "trainee",
+      "fellow",
+      "0 years",
+      "no experience required"
+    ],
+    "exclude_senior_roles": true,
+    "exclude_junior_roles": false,
+    "senior_title_patterns": [
+      "senior",
+      "lead",
+      "staff",
+      "manager",
+      "principal",
+      "full-time",
+      "permanent"
+    ]
+  },
+  "skills": {
+    "domain": "tech",
+    "role_title": "Software Engineering Intern",
+    "target_skills": [
+      "Python",
+      "Java",
+      "C++",
+      "React",
+      "Node.js",
+      "Data Structures",
+      "Algorithms",
+      "SQL",
+      "Git"
+    ],
+    "excluded_skills": [],
+    "tech_keywords": [
+      "software",
+      "developer",
+      "engineer",
+      "data",
+      "web",
+      "intern",
+      "internship"
+    ],
+    "non_tech_exclude_keywords": [
+      "sales",
+      "marketing",
+      "hr",
+      "recruiter",
+      "finance",
+      "accounting",
+      "customer support"
+    ]
+  },
+  "categories": {
+    "enabled": [
+      "software_engineering",
+      "data_ml",
+      "devops_cloud",
+      "cybersecurity",
+      "product_design",
+      "other"
+    ]
+  },
+  "compensation": {
+    "require_salary_disclosed": false,
+    "min_annual_usd": 0,
+    "min_annual_inr_lpa": 0
+  }
+}

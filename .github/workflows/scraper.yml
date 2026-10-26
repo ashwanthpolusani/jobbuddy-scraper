@@ -1,0 +1,40 @@
+name: JobBuddy Scraper Pipeline
+
+on:
+  schedule:
+    # Runs at 08:30 IST (03:00 UTC) every day
+    - cron: "0 3 * * *"
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  scraper-pipeline:
+    name: "JobBuddy Daily Scraper & Verification"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium
+
+      - name: Run Stage 1 (Fast ATS Scrape)
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: python stage1.py
+
+      - name: Run Stage 2 (Deep Experience Verification)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: python stage2.py
