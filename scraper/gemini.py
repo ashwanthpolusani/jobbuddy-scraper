@@ -19,7 +19,7 @@ class ModelPool:
     def __init__(self, cfg: dict):
         gcfg = cfg.get("ai_models", cfg.get("gemini", {}))
         self._client  = genai.Client(api_key=cfg["_gemini_api_key"])
-        self._models  = gcfg.get("models", ["gemini-2.5-flash", "gemini-2.0-flash"])
+        self._models  = gcfg.get("models", ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"])
         self._rpm     = gcfg.get("rpm_limit", 15)
         self._rpd     = gcfg.get("rpd_limit", 1500)
         self._current = 0

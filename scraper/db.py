@@ -61,21 +61,28 @@ def make_job_id(company: str, title: str, link: str) -> str:
 def slug_to_company(url: str) -> str:
     """Best-effort company name extracted from an ATS URL."""
     patterns = [
-        r"/boards/([^/]+)/jobs",
-        r"/postings/([^/?]+)",
-        r"/job-board/([^/?]+)",
+        r"boards(?:\-api)?(?:\.eu)?\.greenhouse\.io/(?:v1/boards/|embed/job_board\?for=)?([^/?#]+)",
+        r"greenhouse\.io/(?:embed/job_board\?for=)?([^/?#]+)",
+        r"lever\.co/(?:v0/postings/)?([^/?#]+)",
+        r"ashbyhq\.com/(?:posting-api/job-board/)?([^/?#]+)",
         r"smartrecruiters\.com/(?:careers/|v1/companies/)?([^/?#]+)",
+        r"apply\.workable\.com/([a-zA-Z0-9\-]+)",
+        r"([a-zA-Z0-9\-]+)\.workable\.com",
     ]
     for pat in patterns:
         m = re.search(pat, url)
         if m:
-            return m.group(1).replace("-", " ").title()
+            slug = m.group(1).strip()
+            if slug not in ("jobs", "careers", "embed", "v1", "v0", "api"):
+                return slug.replace("-", " ").replace("_", " ").title()
     m = re.search(r"https://([a-zA-Z0-9\-]+)\.[^/]+myworkdayjobs\.com", url)
     if m:
-        return m.group(1).replace("-", " ").title()
+        return m.group(1).replace("-", " ").replace("_", " ").title()
     m = re.search(r"https?://(?:www\.)?([a-zA-Z0-9-]+)\.", url)
     if m:
-        return m.group(1).replace("-", " ").title()
+        sub = m.group(1).strip()
+        if sub not in ("jobs", "careers", "boards", "apply", "api"):
+            return sub.replace("-", " ").replace("_", " ").title()
     return ""
 
 

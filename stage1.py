@@ -121,6 +121,9 @@ def main():
     total_chunks = int(os.getenv("TOTAL_CHUNKS", "1"))
     max_runtime  = rcfg.get("max_runtime_minutes", 80) * 60
     allow_ai_fallback = ai_cfg.get("enable_stage1_ai_fallback", True) and not args.no_ai_fallback
+    if allow_ai_fallback and not cfg.get("_gemini_api_key"):
+        print("  [!] Notice: GEMINI_API_KEY not provided. Stage 1 Gemini AI fallback disabled.")
+        allow_ai_fallback = False
 
     create_indexes(cfg)
     url_docs  = get_target_urls(cfg, chunk_index, total_chunks)
@@ -129,8 +132,7 @@ def main():
         print(f"  [Limit] Restricted to first {len(url_docs)} sites.")
 
     print(f"  URLs to process: {len(url_docs)}")
-    print(f"  Engine Mode: High-Speed Pure Python ATS (Gemini AI Fallback: {'Enabled' if allow_ai_fallback else 'Disabled'})
-")
+    print(f"  Engine Mode: High-Speed Pure Python ATS (Gemini AI Fallback: {'Enabled' if allow_ai_fallback else 'Disabled'})\n")
 
     pool = None
     fetcher = None
@@ -149,8 +151,7 @@ def main():
 
             url = doc["url"]
             company_name = doc.get("company_name", slug_to_company(url))
-            print(f"
-[{i}/{len(url_docs)}] {company_name}")
+            print(f"\n[{i}/{len(url_docs)}] {company_name}")
 
             is_api, api_jobs, ats_name = ats_process_url(url)
             fetch_start = time.time()
@@ -227,15 +228,13 @@ def main():
         if fetcher:
             fetcher.close()
 
-    print(f"
-{'=' * 60}")
+    print(f"\n{'=' * 60}")
     print(f"  Stage 1 complete in {(time.time() - start_time):.1f}s. {total_saved} jobs saved/updated.")
     if pool:
         usage = pool.usage_summary()
         usage_str = ", ".join(f"{m}: {c}" for m, c in usage.items())
         print(f"  Stage 1 AI Requests: {usage_str}")
-    print(f"{'=' * 60}
-")
+    print(f"{'=' * 60}\n")
 
 
 if __name__ == "__main__":

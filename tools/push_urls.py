@@ -17,21 +17,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scraper.config import load_config
 from scraper.db     import get_db, slug_to_company
+from scraper.ats    import process_url as ats_process_url
 
-
-# -- ATS detection (for tagging entries) ---------------------------------------
 
 def detect_ats(url: str) -> str:
-    if "greenhouse.io"       in url: return "Greenhouse"
-    if "lever.co"            in url: return "Lever"
-    if "ashbyhq.com"         in url: return "Ashby"
-    if "/api/apply/v2/jobs"  in url: return "Eightfold"
-    if ".mynexthire.com"     in url: return "MyNextHire"
-    if ".myworkdayjobs.com"  in url: return "Workday"
-    if "smartrecruiters.com" in url: return "SmartRecruiters"
-    if "uber.com"            in url: return "Uber"
-    if "workable.com"        in url: return "Workable"
-    return "Unknown"
+    _, _, ats_name = ats_process_url(url)
+    return ats_name
 
 
 def parse_urls(filepath: str) -> list[str]:

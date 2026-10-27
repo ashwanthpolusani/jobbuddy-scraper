@@ -54,7 +54,7 @@ def main():
     print("  JobBuddy - Stage 2: Deep Experience Verification")
     print("=" * 60)
 
-    cfg   = load_config(config_path=args.config or None, preset=args.preset or None)
+    cfg   = load_config(config_path=args.config or None, preset=args.preset or None, require_gemini=True, require_db=True)
     db    = get_db(cfg)
     pool  = ModelPool(cfg)
     fetcher = JDFetcher()

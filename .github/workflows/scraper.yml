@@ -30,6 +30,7 @@ jobs:
 
       - name: Run Stage 1 (Fast ATS Scrape)
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: python stage1.py
 

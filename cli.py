@@ -73,7 +73,7 @@ def validate_config():
 
     try:
         from scraper.config import load_config
-        cfg = load_config()
+        cfg = load_config(require_db=False, require_gemini=False)
         print("=" * 70)
         print("  Config Validation: [PASS]")
         print("=" * 70)

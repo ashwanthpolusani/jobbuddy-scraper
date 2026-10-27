@@ -1,1 +1,0 @@
-"""JobBuddy ATS Discovery Package"""

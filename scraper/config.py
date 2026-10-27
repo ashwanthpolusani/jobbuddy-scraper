@@ -136,7 +136,7 @@ DEFAULT_CONFIG = {
                 "aws", "azure", "gcp", "kubernetes", "docker", "sysadmin", "systems administrator", "network engineer"
             ],
             "cybersecurity": [
-                "security", "cyber", "infosec", "information security", "soc", "vulnerability",
+                "cybersecurity", "cyber-security", "security", "cyber", "infosec", "information security", "soc", "vulnerability",
                 "penetration", "pentest", "iam", "threat", "incident response"
             ],
             "product_design": [
@@ -299,7 +299,12 @@ def _normalize_config(raw: dict) -> dict:
     return mapped
 
 
-def load_config(config_path: str | Path | None = None, preset: str | None = None) -> dict:
+def load_config(
+    config_path: str | Path | None = None,
+    preset: str | None = None,
+    require_gemini: bool = False,
+    require_db: bool = True,
+) -> dict:
     """Load scraper configuration with full safety fallbacks. Guaranteed non-crashing."""
     load_dotenv(_ROOT / ".env")
 
@@ -338,9 +343,9 @@ def load_config(config_path: str | Path | None = None, preset: str | None = None
     cfg["_mongodb_uri"]    = os.getenv("MONGODB_URI", "").strip()
     cfg["_config_source"]   = str(target_path.resolve()) if target_path else "in-memory-defaults"
 
-    if not cfg["_gemini_api_key"]:
+    if require_gemini and not cfg["_gemini_api_key"]:
         raise EnvironmentError("GEMINI_API_KEY is not set in .env or environment.")
-    if not cfg["_mongodb_uri"]:
+    if require_db and not cfg["_mongodb_uri"]:
         raise EnvironmentError("MONGODB_URI is not set in .env or environment.")
 
     return cfg

@@ -52,7 +52,12 @@ def normalize_job_classification(cfg: dict, job: dict) -> dict:
 
     if cat not in valid or cat == "other":
         matched = False
-        for track in enabled_tracks:
+        # Specific specialized tracks take precedence over broad tracks
+        track_priority = ["cybersecurity", "devops_cloud", "product_design", "data_ml", "software_engineering"]
+        priority_order = [t for t in track_priority if t in enabled_tracks] + [
+            t for t in enabled_tracks if t not in track_priority and t != "other"
+        ]
+        for track in priority_order:
             if track in category_regexes:
                 rgx = category_regexes[track]
                 if rgx.search(title) or rgx.search(reqs):
