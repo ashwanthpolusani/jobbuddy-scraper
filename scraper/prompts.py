@@ -135,14 +135,24 @@ JOB DESCRIPTION:
 
 Evaluate this Job Description against the candidate profile:
 
+EXPERIENCE CLAUSE DISAMBIGUATION RULES:
+- "Degree OR equivalent work experience to X+ years" (e.g. "Bachelor's degree in engineering or related field, or equivalent work experience to 2+ Years"):
+  * This is an IN-LIEU substitution clause. Candidates who hold the Bachelor's degree require 0 prior years of professional experience (fresh graduates ARE eligible!).
+  * Do NOT classify as "BLOCKED" merely because the alternative non-degree path mentions 2+ years.
+  * Assign "SAFE" (if entry-level/fresher eligible) or "POSSIBLE" (if ambiguous).
+  * In "verdict_reason", explain: "Accepts Bachelor's degree for fresh graduates, or 2+ years work experience in lieu of a degree."
+  * In "core_requirements", clearly state: "Bachelor's degree in engineering or related field (or 2+ years QA/tech experience in lieu of degree), [key skills]."
+- "Degree AND X+ years experience" / "Requires strictly X+ years experience":
+  * This is a mandatory experience requirement. If X > {threshold}, classify strictly as "BLOCKED".
+
 1. "experience_verdict":
-   - "SAFE": Posting matches candidate target experience ({min_y}-{max_y} years).
-   - "POSSIBLE": Experience requirement is ambiguous or unspecified (candidate should apply anyway).
-   - "BLOCKED": Posting strictly requires >{threshold} years of experience, or fails special rules.{rules_str}
+   - "SAFE": Posting matches candidate target experience ({min_y}-{max_y} years), OR explicitly targets interns, apprentices, trainees, new grads, campus hires, or entry-level.
+   - "POSSIBLE": Experience requirement is completely unspecified or ambiguous, but role is open to freshers / junior candidates.
+   - "BLOCKED": Posting strictly requires >{threshold} years of experience, or requires senior/staff/lead level, or fails special rules.{rules_str}
 
 2. "verdict_reason": 1 sentence explaining the verdict and quoting the exact experience or compensation text.
 
-3. "core_requirements": 1-2 factual sentences summarizing ONLY the required tech stack, languages, or skills.
+3. "core_requirements": 1-2 factual sentences summarizing ONLY the required tech stack, languages, or skills (e.g. "Requires Python, Django, SQL, and Git."). Never include company overviews, corporate introductions, or HTML markup.
 
 Return ONLY a valid JSON object with:
 "experience_verdict", "verdict_reason", "core_requirements"

@@ -14,6 +14,7 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
 import argparse
 import json
 import os
+import re
 import time
 import urllib.parse
 
@@ -27,7 +28,7 @@ from scraper.ats             import process_url as ats_process_url
 from scraper.filters.pre_filter  import pre_filter_jobs
 from scraper.filters.eligibility import is_eligible
 from scraper.filters.classifier  import normalize_job_classification
-from scraper.jd_fetcher import JDFetcher
+from scraper.jd_fetcher import JDFetcher, extract_core_requirements
 from scraper.gemini     import ModelPool
 from scraper.prompts    import stage1_prompt as stage1_prompts
 
@@ -86,8 +87,17 @@ def process_site_jobs(cfg: dict, site_jobs: list[dict], url: str, company_name: 
             job["company_name"] = company_name
 
         normalize_job_classification(cfg, job)
-        job.setdefault("experience_verdict", "POSSIBLE")
-        job.setdefault("core_requirements", job.get("content", "")[:500])
+
+        # Auto-confirm explicit early career / intern / trainee / new grad roles
+        title_str = str(job.get("title", "")).lower()
+        is_explicit_junior = bool(re.search(r"\b(intern|internship|trainee|apprentice|apprenticeship|co-op|new grad|campus|fresher|entry[- ]level)\b", title_str))
+        if is_explicit_junior:
+            job.setdefault("experience_verdict", "SAFE")
+        else:
+            job.setdefault("experience_verdict", "POSSIBLE")
+
+        # Clean, factual core requirements extracted from content (never raw HTML)
+        job["core_requirements"] = extract_core_requirements(job.get("content", ""), title=job.get("title", ""))
         job.setdefault("location", "")
 
         # Resolve relative links

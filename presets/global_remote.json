@@ -1,0 +1,129 @@
+{
+  "$schema": "../scraper.config.schema.json",
+  "_comment": "Preset: Global Remote — Worldwide remote opportunities for tech professionals (0-2 YOE) across software engineering, data/ML, and cloud.",
+  "locations": {
+    "primary_country": "Worldwide",
+    "allowed_cities": [
+      "Remote",
+      "Worldwide",
+      "Anywhere",
+      "Global"
+    ],
+    "indian_tech_hubs": [],
+    "remote_rules": {
+      "allow_worldwide_remote": true,
+      "reject_region_locked_remote": false,
+      "restricted_regions": [],
+      "restricted_timezones": []
+    },
+    "international_visa_rules": {
+      "accept_foreign_roles_only_if_sponsored": false,
+      "accept_visa_sponsorship": true,
+      "accept_relocation_assistance": true,
+      "allow_japan_tech_pending_stage2": true,
+      "sponsorship_keywords": [
+        "visa sponsorship",
+        "remote worldwide",
+        "anywhere in the world",
+        "work from anywhere",
+        "global remote"
+      ]
+    }
+  },
+  "experience": {
+    "target_level": "fresher",
+    "internships_only": false,
+    "min_years": 0,
+    "max_years": 2,
+    "blocked_threshold_years": 2,
+    "delete_blocked_jobs": true,
+    "allow_unspecified_experience": true,
+    "safe_labels": [
+      "fresher", "entry-level", "entry level", "new grad",
+      "graduate hire", "trainee", "associate", "junior", "0-1 years", "0-2 years", "no experience required"
+    ],
+    "internship_patterns": [
+      "intern", "internship", "summer intern", "co-op", "apprentice"
+    ],
+    "junior_title_patterns": [
+      "intern", "internship", "trainee", "fresher", "entry-level", "junior", "associate", "software engineer i"
+    ],
+    "exclude_senior_roles": true,
+    "exclude_junior_roles": false,
+    "senior_title_patterns": [
+      "senior", "staff", "principal", "lead", "director", "vp", "architect", "manager", "head"
+    ]
+  },
+  "skills": {
+    "domain": "tech",
+    "role_title": "Global Remote Software Engineer / Tech Specialist",
+    "target_skills": [
+      "python", "javascript", "typescript", "react", "node", "golang", "rust", "aws", "docker"
+    ],
+    "excluded_skills": [],
+    "tech_keywords": [
+      "software", "developer", "engineer", "frontend", "backend", "fullstack",
+      "devops", "cloud", "data", "ai", "ml", "sre", "security"
+    ],
+    "non_tech_exclude_keywords": [
+      "sales representative", "account executive", "recruiter", "legal counsel", "janitor"
+    ]
+  },
+  "categories": {
+    "enabled": [
+      "software_engineering",
+      "data_ml",
+      "devops_cloud",
+      "cybersecurity",
+      "product_design",
+      "other"
+    ],
+    "early_career_program_patterns": [
+      "early career", "university graduate", "campus", "fellowship"
+    ]
+  },
+  "compensation": {
+    "require_salary_disclosed": false,
+    "min_annual_usd": 0,
+    "min_annual_inr_lpa": 0
+  },
+  "hard_rejection_rules": {
+    "domestic_clearance_keywords": [
+      "top secret", "polygraph", "security clearance required"
+    ],
+    "reject_domestic_citizen_only": true,
+    "domestic_authorization_restricted_countries": [],
+    "reject_mandatory_foreign_language": false,
+    "foreign_language_tests": [],
+    "foreign_languages": [],
+    "reject_non_english_titles": false
+  },
+  "ai_models": {
+    "provider": "gemini",
+    "models": [
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite"
+    ],
+    "rpm_limit": 15,
+    "rpd_limit": 1500,
+    "stage1_chunk_size": 50,
+    "stage1_max_chunks_per_site": 4,
+    "stage2_batch_size": 500,
+    "enable_stage1_ai_fallback": true
+  },
+  "database": {
+    "name": "job_aggregator",
+    "jobs_collection": "jobs",
+    "stats_collection": "site_stats",
+    "urls_collection": "target_urls",
+    "blocked_collection": "blocked_hashes",
+    "jobs_ttl_days": 30,
+    "stats_ttl_days": 14
+  },
+  "runner": {
+    "max_runtime_minutes": 80,
+    "sleep_between_sites_seconds": 2,
+    "sleep_between_stage2_jobs_seconds": 1
+  }
+}
+

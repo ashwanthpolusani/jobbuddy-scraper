@@ -424,9 +424,9 @@
     "currency_preference": "ANY",
     "salary_keywords": [
       "$",
-      "\u20ac",
-      "\u00a3",
-      "\u20b9",
+      "€",
+      "£",
+      "₹",
       "inr",
       "usd",
       "eur",
@@ -511,10 +511,10 @@
       "gemini-3.1-flash-lite"
     ],
     "rpm_limit": 15,
-    "rpd_limit": 500,
+    "rpd_limit": 1500,
     "stage1_chunk_size": 50,
     "stage1_max_chunks_per_site": 4,
-    "stage2_batch_size": 150,
+    "stage2_batch_size": 500,
     "enable_stage1_ai_fallback": true
   },
   "database": {
@@ -529,7 +529,7 @@
   "runner": {
     "max_runtime_minutes": 80,
     "sleep_between_sites_seconds": 3,
-    "sleep_between_stage2_jobs_seconds": 4
+    "sleep_between_stage2_jobs_seconds": 1
   },
   "$schema": "./scraper.config.schema.json"
 }

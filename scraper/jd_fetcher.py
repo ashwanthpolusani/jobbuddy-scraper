@@ -3,20 +3,83 @@ scraper/jd_fetcher.py - Fetches full job description HTML/text for Stage 2.
 Tries fast HTTP first; falls back to Workday CXS JSON API or persistent Playwright.
 Keeps 1 persistent Playwright browser session across batch runs to eliminate process churn.
 """
+import html
 import json
 import re
 import urllib.request
 from playwright.sync_api import sync_playwright
 
 
-def extract_text_from_html(html: str, max_chars: int = 8000) -> str:
+def extract_text_from_html(raw_html: str, max_chars: int = 8000) -> str:
     """Strip scripts, styles, and tags from HTML - return clean readable text."""
-    html = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r"<style.*?</style>",   "", html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r"<svg.*?</svg>",       "", html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r"<[^>]+>", " ", html)
-    html = re.sub(r"\s{3,}", "\n\n", html)
-    return html.strip()[:max_chars]
+    if not raw_html:
+        return ""
+    # 1. Unescape HTML entities (e.g. &lt;div&gt; -> <div>, &quot; -> ", &amp; -> &)
+    text = html.unescape(raw_html)
+    text = text.replace("&nbsp;", " ").replace("\xa0", " ")
+    # 2. Convert block-level / line-break tags to newlines before stripping
+    text = re.sub(r"</?(?:p|div|h[1-6]|li|br|ul|ol|tr|table|article|section)[^>]*>", "\n", text, flags=re.IGNORECASE)
+    # 3. Strip scripts, styles, SVGs
+    text = re.sub(r"<script.*?</script>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<style.*?</style>",   "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<svg.*?</svg>",       "", text, flags=re.DOTALL | re.IGNORECASE)
+    # 4. Strip remaining HTML tags
+    text = re.sub(r"<[^>]+>", " ", text)
+    # 5. Normalize whitespace and empty lines
+    lines = [line.strip() for line in text.split("\n")]
+    clean_lines = []
+    for line in lines:
+        if line:
+            clean_lines.append(re.sub(r"[ \t]+", " ", line))
+    text = "\n".join(clean_lines)
+    return text[:max_chars].strip()
+
+
+def extract_core_requirements(content: str, title: str = "", max_chars: int = 280) -> str:
+    """
+    Extracts a clean, concise, 1-2 sentence core requirements summary from raw JD content/HTML.
+    Intelligently targets Requirements/Qualifications sections and strips boilerplate.
+    Guaranteed NEVER to return raw HTML or entity markup.
+    """
+    if not content:
+        return f"Entry-level role for {title}." if title else "Qualifications detailed in job posting."
+
+    clean_text = extract_text_from_html(content, max_chars=15000)
+    if not clean_text:
+        return f"Entry-level role for {title}." if title else "Qualifications detailed in job posting."
+
+    # Search for Requirements / Qualifications / Skills section
+    section_pattern = re.compile(
+        r"(?:what you(?:'ll)? (?:need|bring)|requirements|qualifications|skills|who you are|minimum qualifications|basic qualifications|what we look for)[\s:\-]*\n+(.*?)(?=\n\s*(?:what we offer|benefits|perks|about us|about the company|who we are|nice to have|preferred qualifications)|\Z)",
+        re.DOTALL | re.IGNORECASE
+    )
+    m = section_pattern.search(clean_text)
+    if m:
+        extracted = m.group(1).strip()
+        bullet_lines = [
+            re.sub(r"^[•\-*–\d\.]+\s*", "", l).strip()
+            for l in extracted.split("\n")
+            if len(l.strip()) > 5
+        ]
+        bullet_lines = [b for b in bullet_lines if not any(skip in b.lower() for skip in ["equal opportunity", "we are an equal", "diversity", "affirmative action"])]
+        if bullet_lines:
+            res = " • ".join(bullet_lines[:3])
+            if len(res) > max_chars:
+                res = res[:max_chars - 3].rsplit(" ", 1)[0] + "..."
+            return res
+
+    # Fallback: scan lines for first meaningful non-intro paragraph
+    lines = clean_text.split("\n")
+    boilerplate_words = ["who is", "about us", "about the company", "about the team", "founded in", "equal opportunity", "privacy policy", "our mission", "company overview", "job description"]
+    for l in lines:
+        l_str = l.strip()
+        if len(l_str) >= 30 and not any(bw in l_str.lower() for bw in boilerplate_words):
+            if len(l_str) > max_chars:
+                return l_str[:max_chars - 3].rsplit(" ", 1)[0] + "..."
+            return l_str
+
+    fallback = clean_text[:max_chars].strip()
+    return fallback + ("..." if len(clean_text) > max_chars else "")
 
 
 def _fetch_http(url: str) -> str:
@@ -27,9 +90,9 @@ def _fetch_http(url: str) -> str:
             headers={"User-Agent": "Mozilla/5.0", "Accept": "text/html,*/*;q=0.8"},
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
-            if len(html) > 500:
-                return html
+            html_text = resp.read().decode("utf-8", errors="ignore")
+            if len(html_text) > 500:
+                return html_text
     except Exception:
         pass
     return ""
@@ -88,9 +151,9 @@ class JDFetcher:
             if wd_text:
                 return wd_text
 
-        html = _fetch_http(url)
-        if html:
-            return extract_text_from_html(html)
+        html_text = _fetch_http(url)
+        if html_text:
+            return extract_text_from_html(html_text)
 
         # Persistent Playwright fallback
         try:
@@ -99,10 +162,10 @@ class JDFetcher:
                 page = browser.new_page()
                 page.goto(url, wait_until="domcontentloaded", timeout=25000)
                 page.wait_for_timeout(1500)
-                html = page.content()
+                page_html = page.content()
                 page.close()
-                if html:
-                    return extract_text_from_html(html)
+                if page_html:
+                    return extract_text_from_html(page_html)
         except Exception as e:
             print(f"    [Playwright Fetch Warning] {e}")
 

@@ -18,7 +18,7 @@ import time
 from scraper.config  import load_config
 from scraper.db      import get_db, now_utc, record_blocked_job, make_job_id
 from scraper.gemini  import ModelPool
-from scraper.jd_fetcher import JDFetcher
+from scraper.jd_fetcher import JDFetcher, extract_core_requirements
 from scraper.filters.eligibility import is_eligible
 from scraper.prompts import stage2_prompt as stage2_prompts
 
@@ -45,7 +45,8 @@ def score_job(cfg: dict, jd_text: str, pool: ModelPool) -> dict | None:
 
 def main():
     parser = argparse.ArgumentParser(description="JobBuddy - Stage 2: Deep Experience Verification")
-    parser.add_argument("--limit",  type=int, default=0, help="Limit number of jobs to verify (0 for default batch size)")
+    parser.add_argument("--limit",  type=int, default=0, help="Limit number of jobs to verify (0 uses batch size or all with --all)")
+    parser.add_argument("--all",    action="store_true", help="Process all pending jobs in the queue without stopping at batch limit")
     parser.add_argument("--config", type=str, default="", help="Path to custom config JSON file (default: scraper.config.json)")
     parser.add_argument("--preset", type=str, default="", help="Preset name from presets/ (e.g. 'india_fresher')")
     args = parser.parse_args()
@@ -64,7 +65,10 @@ def main():
     delete_blocked = cfg.get("experience", {}).get("delete_blocked_jobs", True)
     sleep_delay = cfg.get("runner", {}).get("sleep_between_stage2_jobs_seconds", 3)
 
-    if args.limit > 0:
+    if getattr(args, "all", False):
+        batch_size = 100000
+        print(f"  [All] Processing all eligible pending jobs without batch limit.")
+    elif args.limit > 0:
         batch_size = args.limit
         print(f"  [Limit] Batch size set to {batch_size}")
 
@@ -118,12 +122,14 @@ def main():
             jd_text = fetcher.fetch(link)
             if not jd_text:
                 print(f"  Could not fetch JD - marking POSSIBLE to avoid repeat loop.")
+                fallback_reqs = extract_core_requirements(job.get("core_requirements", ""), title=title)
                 db[jobs_col].update_one(
                     {"_id": doc_id},
                     {"$set": {
                         "stage2_processed_at": now_utc(),
                         "stage2_verified": True,
-                        "experience_verdict": EXP_POSSIBLE
+                        "experience_verdict": EXP_POSSIBLE,
+                        "core_requirements": fallback_reqs
                     }}
                 )
                 skipped += 1

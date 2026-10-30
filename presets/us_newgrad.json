@@ -1,0 +1,156 @@
+{
+  "$schema": "../scraper.config.schema.json",
+  "_comment": "Preset: US Tech New Grad — Entry-level software engineering & tech roles across US tech hubs and US remote (0-1 YOE).",
+  "locations": {
+    "primary_country": "United States",
+    "allowed_cities": [
+      "San Francisco",
+      "San Jose",
+      "Silicon Valley",
+      "Sunnyvale",
+      "Mountain View",
+      "Palo Alto",
+      "Seattle",
+      "Redmond",
+      "Bellevue",
+      "New York",
+      "NYC",
+      "Austin",
+      "Boston",
+      "Cambridge",
+      "Chicago",
+      "Los Angeles",
+      "San Diego",
+      "Denver",
+      "Boulder",
+      "Atlanta",
+      "Remote - US",
+      "Remote, US",
+      "United States",
+      "US Remote",
+      "Remote (US)"
+    ],
+    "indian_tech_hubs": [],
+    "remote_rules": {
+      "allow_worldwide_remote": true,
+      "reject_region_locked_remote": false,
+      "restricted_regions": [
+        "europe",
+        "asia",
+        "india",
+        "latin america"
+      ],
+      "restricted_timezones": []
+    },
+    "international_visa_rules": {
+      "accept_foreign_roles_only_if_sponsored": false,
+      "accept_visa_sponsorship": true,
+      "accept_relocation_assistance": true,
+      "allow_japan_tech_pending_stage2": false,
+      "sponsorship_keywords": [
+        "visa sponsorship",
+        "opt/cpt",
+        "f-1",
+        "h1b",
+        "work authorization support"
+      ]
+    }
+  },
+  "experience": {
+    "target_level": "fresher",
+    "internships_only": false,
+    "min_years": 0,
+    "max_years": 1,
+    "blocked_threshold_years": 1,
+    "delete_blocked_jobs": true,
+    "allow_unspecified_experience": true,
+    "safe_labels": [
+      "new grad", "university grad", "university graduate", "campus hire",
+      "entry-level", "entry level", "associate engineer", "software engineer i", "swe i", "0-1 years"
+    ],
+    "internship_patterns": [
+      "intern", "internship", "summer intern", "co-op"
+    ],
+    "junior_title_patterns": [
+      "intern", "new grad", "university graduate", "campus", "entry-level", "associate", "swe 1", "sde 1"
+    ],
+    "exclude_senior_roles": true,
+    "exclude_junior_roles": false,
+    "senior_title_patterns": [
+      "senior", "staff", "principal", "lead", "director", "vp", "architect", "manager", "sde 2", "sde ii", "swe ii"
+    ]
+  },
+  "skills": {
+    "domain": "tech",
+    "role_title": "US New Grad Software Engineer",
+    "target_skills": [
+      "python", "java", "c++", "javascript", "typescript", "react", "golang", "sql"
+    ],
+    "excluded_skills": [],
+    "tech_keywords": [
+      "software", "developer", "engineer", "swe", "sde", "frontend", "backend", "fullstack", "data", "ml", "cloud"
+    ],
+    "non_tech_exclude_keywords": [
+      "nurse", "sales representative", "account executive", "driver", "recruiter", "attorney"
+    ]
+  },
+  "categories": {
+    "enabled": [
+      "software_engineering",
+      "data_ml",
+      "devops_cloud",
+      "cybersecurity",
+      "product_design",
+      "other"
+    ],
+    "early_career_program_patterns": [
+      "early career", "university graduate", "new grad program", "campus hire"
+    ]
+  },
+  "compensation": {
+    "require_salary_disclosed": false,
+    "min_annual_usd": 70000,
+    "min_annual_inr_lpa": 0
+  },
+  "hard_rejection_rules": {
+    "domestic_clearance_keywords": [
+      "active ts/sci", "polygraph required", "dod clearance"
+    ],
+    "reject_domestic_citizen_only": false,
+    "domestic_authorization_restricted_countries": [],
+    "reject_mandatory_foreign_language": true,
+    "foreign_language_tests": [],
+    "foreign_languages": [
+      "german", "japanese", "mandarin", "french"
+    ],
+    "reject_non_english_titles": true
+  },
+  "ai_models": {
+    "provider": "gemini",
+    "models": [
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite"
+    ],
+    "rpm_limit": 15,
+    "rpd_limit": 1500,
+    "stage1_chunk_size": 50,
+    "stage1_max_chunks_per_site": 4,
+    "stage2_batch_size": 500,
+    "enable_stage1_ai_fallback": true
+  },
+  "database": {
+    "name": "job_aggregator",
+    "jobs_collection": "jobs",
+    "stats_collection": "site_stats",
+    "urls_collection": "target_urls",
+    "blocked_collection": "blocked_hashes",
+    "jobs_ttl_days": 30,
+    "stats_ttl_days": 14
+  },
+  "runner": {
+    "max_runtime_minutes": 80,
+    "sleep_between_sites_seconds": 2,
+    "sleep_between_stage2_jobs_seconds": 1
+  }
+}
+

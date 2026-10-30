@@ -14,7 +14,9 @@ ROOT = Path(__file__).resolve().parent
 
 PRESET_DESCRIPTIONS = {
     "india_fresher": "DEFAULT: Indian tech fresher (0-1 YOE) roles across India tech hubs, worldwide remote, & visa sponsorship.",
-    "indian_internships": "College students seeking tech internships, co-ops, summer trainee roles (0 YOE)."
+    "indian_internships": "College students seeking tech internships, co-ops, summer trainee roles (0 YOE).",
+    "global_remote": "Worldwide remote opportunities for tech professionals (0-2 YOE) across software engineering, data/ML, and cloud.",
+    "us_newgrad": "US tech new grads and entry-level SWE (0-1 YOE) across US tech hubs and US remote."
 }
 
 

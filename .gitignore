@@ -13,6 +13,9 @@ env/
 # URLs file — push to DB via setup/push_urls.py, then delete this
 urls.txt
 
+# Temp & Dumps
+temp/
+
 # IDE
 .vscode/
 .idea/
