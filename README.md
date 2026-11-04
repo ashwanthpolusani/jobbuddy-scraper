@@ -1,4 +1,4 @@
-# JobBuddy Scraper
+# Rolenaut Engine (Job Scraper)
 
 A fast, modular, config-driven job scraper engine targeting company ATS platforms directly (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Eightfold, Workable, Uber, MyNextHire). 
 
@@ -43,7 +43,7 @@ Extracts early-career tech jobs at high speed, verifies deep job descriptions us
           Verified Jobs & Active Profile Metadata in MongoDB
                                     │
                                     ▼
-      Instant Display on JobBuddy WebApp (Zero Setup or Self-Hosted)
+      Instant Display on Rolenaut WebApp (Zero Setup or Self-Hosted)
 ```
 
 ---

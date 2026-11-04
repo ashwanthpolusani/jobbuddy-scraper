@@ -130,6 +130,17 @@ def create_indexes(cfg: dict):
         db[j].create_index("category",                  background=True)
         db[j].create_index("company_name",              background=True)
         db[j].create_index("ats_name",                  background=True)
+        db[j].create_index("stage2_verified",           background=True)
+        db[j].create_index(
+            [("link_type", 1), ("stage2_verified", 1), ("experience_verdict", 1), ("category", 1), ("scraped_at", -1)],
+            name="idx_jobs_frontend_curated",
+            background=True
+        )
+        db[j].create_index(
+            [("stage2_processed_at", 1), ("link_type", 1), ("scraped_at", 1)],
+            name="idx_stage2_pending_queue",
+            background=True
+        )
         db[j].create_index("scraped_at",   expireAfterSeconds=jobs_ttl,  background=True)
 
         db[s].create_index("url",                        background=True)
@@ -259,18 +270,36 @@ def upsert_jobs(cfg: dict, jobs: list[dict], ats_name: str = "") -> int:
             if is_job_blocked(cfg, job_id, link):
                 continue
 
-            job["job_id"]   = job_id
-            job["ats_name"] = ats_name
-            job["scraped_at"] = now
-
             # Filter doc for atomic upsert
             filter_doc = {"job_id": job_id}
-            set_doc = {k: v for k, v in job.items() if k != "first_seen"}
-            set_on_insert = {"first_seen": now}
+
+            # Fields refreshed on every recurring scrape
+            always_set = {
+                "scraped_at": now,
+                "ats_name": ats_name,
+                "source_url": job.get("source_url", ""),
+            }
+
+            # Protected fields set ONLY on insert (never clobbers Stage 2 verified data)
+            set_on_insert = {
+                "job_id": job_id,
+                "title": title,
+                "company_name": company,
+                "link": link,
+                "link_type": job.get("link_type", "direct_apply"),
+                "category": job.get("category", "other"),
+                "location": job.get("location", ""),
+                "core_requirements": job.get("core_requirements", ""),
+                "experience_verdict": job.get("experience_verdict", "POSSIBLE"),
+                "first_seen": now,
+                "stage2_verified": False,
+            }
+            if job.get("content"):
+                set_on_insert["content"] = job["content"]
 
             db[col].update_one(
                 filter_doc,
-                {"$set": set_doc, "$setOnInsert": set_on_insert},
+                {"$set": always_set, "$setOnInsert": set_on_insert},
                 upsert=True
             )
             saved += 1

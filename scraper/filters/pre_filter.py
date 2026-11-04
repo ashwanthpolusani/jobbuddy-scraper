@@ -97,8 +97,21 @@ def pre_filter_jobs(cfg: dict, jobs: list[dict]) -> list[dict]:
                 continue
 
         # 3. Fresher Gate (Exclude senior roles when candidate has <= 1 YOE)
-        if exclude_sr and max_years <= 1 and senior_regex and senior_regex.search(t_lower):
-            continue
+        if exclude_sr and max_years <= 1:
+            t_normalized = re.sub(r"[\-_]+", " ", t_lower)
+            if senior_regex and (senior_regex.search(t_lower) or senior_regex.search(t_normalized)):
+                continue
+
+            # Check explicit experience requirements in title (e.g. 'Experience: 4 - 8 yrs', '3+ yrs exp')
+            title_exp = re.search(
+                r"(?i)(?:(?:exp(?:erience)?|yoe)[\s:\-]*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*(?:yrs?|years?))|"
+                r"\b(\d+)\+?\s*(?:yrs?|years?)\s*(?:exp|experience|yoe)\b",
+                title
+            )
+            if title_exp:
+                exp_num = int(title_exp.group(1) or title_exp.group(3))
+                if exp_num > max_years:
+                    continue
 
         # 4. Domain & Skills Gate
         if domain != "tech" and domain not in ("all", "any"):

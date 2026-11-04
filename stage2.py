@@ -81,8 +81,8 @@ def main():
 
     pending = list(
         db[jobs_col]
-        .find(query, {"_id": 1, "link": 1, "title": 1, "company_name": 1, "location": 1, "core_requirements": 1, "job_id": 1})
-        .sort("scraped_at", -1)
+        .find(query, {"_id": 1, "link": 1, "title": 1, "company_name": 1, "location": 1, "core_requirements": 1, "job_id": 1, "content": 1})
+        .sort("scraped_at", 1)
         .limit(batch_size)
     )
     print(f"  {len(pending)} jobs pending Stage 2 verification (batch: {batch_size}).\n")
@@ -91,12 +91,15 @@ def main():
         print("  All eligible jobs have already been verified by Stage 2.\n")
         return
 
-    verified = blocked = skipped = deleted = 0
+    verified = blocked = skipped = deleted = processed_count = 0
     start_time = time.time()
+    stop_reason = f"Completed batch of {len(pending)} jobs"
 
     try:
         for i, job in enumerate(pending, 1):
+            processed_count = i
             if time.time() - start_time > max_runtime:
+                stop_reason = f"Hit max runtime limit ({max_runtime // 60} minutes)"
                 print("  [FAIL-SAFE] Approaching runtime limit. Shutting down gracefully...")
                 break
 
@@ -119,18 +122,19 @@ def main():
             print(f"[{i}/{len(pending)}] {title} @ {company} ({loc})")
             print(f"  -> {link}")
 
-            jd_text = fetcher.fetch(link)
+            # Re-use content if already captured in Stage 1 to avoid redundant network / browser fetch
+            cached_content = str(job.get("content") or "").strip()
+            if len(cached_content) >= 200:
+                print(f"  [Cache Hit] Using pre-cached JD content ({len(cached_content)} chars)")
+                jd_text = cached_content
+            else:
+                jd_text = fetcher.fetch(link)
+
             if not jd_text:
-                print(f"  Could not fetch JD - marking POSSIBLE to avoid repeat loop.")
-                fallback_reqs = extract_core_requirements(job.get("core_requirements", ""), title=title)
+                print(f"  Could not fetch JD - leaving unverified for next run.")
                 db[jobs_col].update_one(
                     {"_id": doc_id},
-                    {"$set": {
-                        "stage2_processed_at": now_utc(),
-                        "stage2_verified": True,
-                        "experience_verdict": EXP_POSSIBLE,
-                        "core_requirements": fallback_reqs
-                    }}
+                    {"$inc": {"stage2_retries": 1}, "$set": {"last_stage2_error": now_utc()}}
                 )
                 skipped += 1
                 continue
@@ -146,14 +150,10 @@ def main():
 
             result = score_job(cfg, jd_text, pool)
             if not result:
-                print(f"  Gemini returned no valid result - marking POSSIBLE.")
+                print(f"  Gemini evaluation failed or rate-limited - leaving unverified for next run.")
                 db[jobs_col].update_one(
                     {"_id": doc_id},
-                    {"$set": {
-                        "stage2_processed_at": now_utc(),
-                        "stage2_verified": True,
-                        "experience_verdict": EXP_POSSIBLE
-                    }}
+                    {"$inc": {"stage2_retries": 1}, "$set": {"last_stage2_error": now_utc()}}
                 )
                 skipped += 1
                 continue
@@ -198,16 +198,57 @@ def main():
     finally:
         fetcher.close()
 
-    print(f"\n{'=' * 60}")
-    print(f"  Stage 2 complete.")
-    print(f"  Verified (SAFE/POSSIBLE): {verified}")
-    print(f"  Blocked & Tombstoned:    {blocked}")
-    print(f"  Deleted (ineligible):     {deleted}")
-    print(f"  Skipped:                  {skipped}")
+    elapsed_secs = time.time() - start_time
     usage = pool.usage_summary()
+    total_gemini_calls = sum(usage.values())
+
+    remaining_pending = db[jobs_col].count_documents({
+        "link": {"$exists": True, "$ne": ""},
+        "link_type": "direct_apply",
+        "stage2_processed_at": {"$exists": False},
+        "experience_verdict": {"$nin": ["BLOCKED", "REJECTED"]}
+    })
+
+    print(f"\n{'=' * 60}")
+    print(f"  Stage 2 Execution Summary:")
+    print(f"  Status / Stop Reason:       {stop_reason}")
+    print(f"  Total Runtime:              {elapsed_secs:.1f}s ({(elapsed_secs / 60):.1f} mins)")
+    print(f"  Jobs Processed in Batch:    {processed_count} of {len(pending)}")
+    print(f"  Verified (SAFE/POSSIBLE):   {verified}")
+    print(f"  Blocked & Tombstoned:       {blocked}")
+    print(f"  Deleted (ineligible):       {deleted}")
+    print(f"  Skipped (error/retry):      {skipped}")
+    print(f"  Remaining Pending in Queue: {remaining_pending}")
+    print("-" * 60)
+    print("  Gemini AI Telemetry:")
+    print(f"  Total Gemini Calls Fired:   {total_gemini_calls}")
     for model, count in usage.items():
-        print(f"  {model}: {count} requests")
+        print(f"    - {model:<24}: {count} calls")
     print(f"{'=' * 60}\n")
+
+    # Record telemetry into MongoDB meta collection for frontend / monitoring visibility
+    try:
+        db["meta"].update_one(
+            {"_id": "last_stage2_run"},
+            {
+                "$set": {
+                    "timestamp": now_utc(),
+                    "stop_reason": stop_reason,
+                    "runtime_seconds": round(elapsed_secs, 1),
+                    "jobs_processed": processed_count,
+                    "verified": verified,
+                    "blocked": blocked,
+                    "deleted": deleted,
+                    "skipped": skipped,
+                    "remaining_pending": remaining_pending,
+                    "gemini_calls_fired": total_gemini_calls,
+                    "gemini_model_usage": usage,
+                }
+            },
+            upsert=True
+        )
+    except Exception as e:
+        print(f"  [!] Could not save stage2 telemetry to meta: {e}")
 
 
 if __name__ == "__main__":

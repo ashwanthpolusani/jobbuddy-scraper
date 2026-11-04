@@ -34,7 +34,7 @@ def fetch_jobs(slug: str) -> list[dict] | None:
                 return [
                     {
                         "title":    j.get("title", ""),
-                        "location": j.get("location", {}).get("name", ""),
+                        "location": (j.get("location") or {}).get("name", ""),
                         "link":     j.get("absolute_url", ""),
                         "content":  j.get("content", ""),
                     }

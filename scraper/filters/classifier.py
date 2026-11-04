@@ -18,10 +18,16 @@ def _compile_patterns(cfg: dict):
     patterns_map = cat_cfg.get("category_patterns", {})
     for category_name, keywords in patterns_map.items():
         if keywords:
-            category_regexes[category_name] = re.compile(
-                r"\b(?:" + "|".join(map(re.escape, keywords)) + r")\b",
-                re.IGNORECASE
-            )
+            parts = []
+            for kw in keywords:
+                escaped = re.escape(kw)
+                if kw.endswith("+") or kw.endswith("#"):
+                    parts.append(rf"\b{escaped}(?!\w)")
+                elif kw.startswith("."):
+                    parts.append(rf"(?<!\w){escaped}\b")
+                else:
+                    parts.append(rf"\b{escaped}\b")
+            category_regexes[category_name] = re.compile("|".join(parts), re.IGNORECASE)
 
     return portal_regex, category_regexes
 

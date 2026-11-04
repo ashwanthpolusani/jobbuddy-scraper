@@ -86,9 +86,13 @@ def process_site_jobs(cfg: dict, site_jobs: list[dict], url: str, company_name: 
         if not job.get("company_name"):
             job["company_name"] = company_name
 
+        # 1. Clean, factual core requirements extracted from content (never raw HTML)
+        job["core_requirements"] = extract_core_requirements(job.get("content", ""), title=job.get("title", ""))
+
+        # 2. Normalize category (uses title + extracted core requirements)
         normalize_job_classification(cfg, job)
 
-        # Auto-confirm explicit early career / intern / trainee / new grad roles
+        # 3. Auto-confirm explicit early career / intern / trainee / new grad roles
         title_str = str(job.get("title", "")).lower()
         is_explicit_junior = bool(re.search(r"\b(intern|internship|trainee|apprentice|apprenticeship|co-op|new grad|campus|fresher|entry[- ]level)\b", title_str))
         if is_explicit_junior:
@@ -96,8 +100,6 @@ def process_site_jobs(cfg: dict, site_jobs: list[dict], url: str, company_name: 
         else:
             job.setdefault("experience_verdict", "POSSIBLE")
 
-        # Clean, factual core requirements extracted from content (never raw HTML)
-        job["core_requirements"] = extract_core_requirements(job.get("content", ""), title=job.get("title", ""))
         job.setdefault("location", "")
 
         # Resolve relative links
@@ -238,13 +240,41 @@ def main():
         if fetcher:
             fetcher.close()
 
+    elapsed_secs = time.time() - start_time
     print(f"\n{'=' * 60}")
-    print(f"  Stage 1 complete in {(time.time() - start_time):.1f}s. {total_saved} jobs saved/updated.")
+    print(f"  Stage 1 Execution Summary:")
+    print(f"  Status / Stop Reason:       Completed sweep of {len(urls)} company career portals")
+    print(f"  Total Runtime:              {elapsed_secs:.1f}s ({(elapsed_secs / 60):.1f} mins)")
+    print(f"  Total Jobs Saved/Updated:   {total_saved}")
     if pool:
         usage = pool.usage_summary()
-        usage_str = ", ".join(f"{m}: {c}" for m, c in usage.items())
-        print(f"  Stage 1 AI Requests: {usage_str}")
+        total_ai_calls = sum(usage.values())
+        print(f"  Total Gemini Calls Fired:   {total_ai_calls}")
+        for m, c in usage.items():
+            print(f"    - {m:<24}: {c} calls")
     print(f"{'=' * 60}\n")
+
+    # Record telemetry into MongoDB meta collection
+    try:
+        db = get_db(cfg)
+        ai_usage = pool.usage_summary() if pool else {}
+        db["meta"].update_one(
+            {"_id": "last_stage1_run"},
+            {
+                "$set": {
+                    "timestamp": now_utc(),
+                    "stop_reason": f"Completed sweep of {len(urls)} company career portals",
+                    "runtime_seconds": round(elapsed_secs, 1),
+                    "urls_processed": len(urls),
+                    "total_jobs_saved": total_saved,
+                    "gemini_calls_fired": sum(ai_usage.values()),
+                    "gemini_model_usage": ai_usage,
+                }
+            },
+            upsert=True
+        )
+    except Exception as e:
+        print(f"  [!] Could not save stage1 telemetry to meta: {e}")
 
 
 if __name__ == "__main__":

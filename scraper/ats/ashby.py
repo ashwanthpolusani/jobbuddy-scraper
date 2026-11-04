@@ -23,7 +23,7 @@ def fetch_jobs(slug: str) -> list[dict] | None:
             return [
                 {
                     "title":    j.get("title", "Unknown Title"),
-                    "location": j.get("location", "Unknown Location"),
+                    "location": f"{j.get('location', '')} (Remote)".strip() if j.get("isRemote") and "remote" not in str(j.get("location", "")).lower() else j.get("location", "Unknown Location"),
                     "link":     j.get("jobUrl", ""),
                     "content":  j.get("descriptionPlain", ""),
                 }

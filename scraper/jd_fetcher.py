@@ -155,19 +155,31 @@ class JDFetcher:
         if html_text:
             return extract_text_from_html(html_text)
 
-        # Persistent Playwright fallback
-        try:
-            browser = self._get_browser()
-            if browser:
+        # Persistent Playwright fallback with resource blocking
+        browser = self._get_browser()
+        if browser:
+            page = None
+            try:
                 page = browser.new_page()
-                page.goto(url, wait_until="domcontentloaded", timeout=25000)
-                page.wait_for_timeout(1500)
+                # Block heavy assets (images, fonts, stylesheets, media) to speed up load 5x
+                page.route(
+                    "**/*",
+                    lambda route: route.abort()
+                    if route.request.resource_type in ["image", "media", "font", "stylesheet"]
+                    else route.continue_()
+                )
+                page.goto(url, wait_until="domcontentloaded", timeout=15000)
                 page_html = page.content()
-                page.close()
                 if page_html:
                     return extract_text_from_html(page_html)
-        except Exception as e:
-            print(f"    [Playwright Fetch Warning] {e}")
+            except Exception as e:
+                print(f"    [Playwright Fetch Warning] {e}")
+            finally:
+                if page:
+                    try:
+                        page.close()
+                    except Exception:
+                        pass
 
         return ""
 

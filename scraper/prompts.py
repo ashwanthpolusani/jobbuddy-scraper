@@ -136,12 +136,12 @@ JOB DESCRIPTION:
 Evaluate this Job Description against the candidate profile:
 
 EXPERIENCE CLAUSE DISAMBIGUATION RULES:
-- "Degree OR equivalent work experience to X+ years" (e.g. "Bachelor's degree in engineering or related field, or equivalent work experience to 2+ Years"):
-  * This is an IN-LIEU substitution clause. Candidates who hold the Bachelor's degree require 0 prior years of professional experience (fresh graduates ARE eligible!).
-  * Do NOT classify as "BLOCKED" merely because the alternative non-degree path mentions 2+ years.
-  * Assign "SAFE" (if entry-level/fresher eligible) or "POSSIBLE" (if ambiguous).
-  * In "verdict_reason", explain: "Accepts Bachelor's degree for fresh graduates, or 2+ years work experience in lieu of a degree."
-  * In "core_requirements", clearly state: "Bachelor's degree in engineering or related field (or 2+ years QA/tech experience in lieu of degree), [key skills]."
+- "Degree OR equivalent work experience to X+ years" / "X years of experience OR a Bachelor's degree" (e.g. "4 years of relevant experience or a Bachelor's degree in Computer Science", "Bachelor's degree or 4+ years of professional experience in lieu of degree"):
+  * This is an IN-LIEU education-experience substitution clause. Candidates who hold the Bachelor's degree require ZERO prior years of professional experience (fresh graduates with a degree ARE 100% eligible!).
+  * CRITICAL: Do NOT classify as "BLOCKED" merely because the alternative non-degree path asks for 2+, 3+, or 4+ years of experience!
+  * If the candidate holds or is completing a Bachelor's/Master's degree, treat as entry-level/fresher eligible.
+  * In "verdict_reason", explain: "Accepts Bachelor's degree for fresh graduates (0 YOE), or X years experience in lieu of a degree."
+  * In "core_requirements", clearly state: "Bachelor's degree in Computer Science/Engineering (or X years experience in lieu of degree), [key skills]."
 - "Degree AND X+ years experience" / "Requires strictly X+ years experience":
   * This is a mandatory experience requirement. If X > {threshold}, classify strictly as "BLOCKED".
 

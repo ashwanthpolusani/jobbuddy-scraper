@@ -26,7 +26,7 @@ def fetch_jobs(slug: str) -> list[dict] | None:
             return [
                 {
                     "title":    j.get("text", ""),
-                    "location": j.get("categories", {}).get("location", ""),
+                    "location": (j.get("categories") or {}).get("location", ""),
                     "link":     j.get("hostedUrl", ""),
                     "content":  j.get("descriptionPlain", ""),
                 }

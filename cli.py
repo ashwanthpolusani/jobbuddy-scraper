@@ -1,5 +1,5 @@
 """
-cli.py - Master Unified CLI for JobBuddy Scraper
+cli.py - Master Unified CLI for Rolenaut Scraper Engine
 Handles preset switching, URL management, ATS discovery, and pipeline execution.
 Everything a user or cloner needs can be run through this single entrypoint.
 """
@@ -27,7 +27,7 @@ def list_presets():
         return
 
     print("=" * 70)
-    print("  JobBuddy Scraper - Available Presets")
+    print("  Rolenaut Engine - Available Presets")
     print("=" * 70)
     for p in sorted(presets_dir.glob("*.json")):
         name = p.stem
