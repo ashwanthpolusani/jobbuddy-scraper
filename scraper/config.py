@@ -32,7 +32,9 @@ DEFAULT_CONFIG = {
                 "us", "u.s.", "usa", "united states", "canada", "can", "uk", "united kingdom",
                 "europe", "emea", "germany", "france", "spain", "portugal", "latin america",
                 "latam", "colombia", "brazil", "peru", "mexico", "argentina", "chile",
-                "costa rica", "australia", "nz", "china"
+                "costa rica", "australia", "nz", "china", "poland", "nigeria", "turkey",
+                "kenya", "philippines", "indonesia", "egypt", "romania", "ireland",
+                "netherlands", "sweden", "switzerland", "apac", "japan", "singapore"
             ],
             "restricted_timezones": [
                 "PST", "EST", "CST", "MST", "CET", "GMT"
@@ -206,10 +208,11 @@ DEFAULT_CONFIG = {
             "gemini-3.1-flash-lite"
         ],
         "rpm_limit": 15,
-        "rpd_limit": 500,
+        "rpd_limit": 1500,
         "stage1_chunk_size": 50,
         "stage1_max_chunks_per_site": 4,
-        "stage2_batch_size": 150
+        "stage2_batch_size": 200,
+        "enable_stage1_ai_fallback": True
     },
     "database": {
         "name": "job_aggregator",
@@ -221,9 +224,11 @@ DEFAULT_CONFIG = {
         "stats_ttl_days": 14
     },
     "runner": {
-        "max_runtime_minutes": 80,
-        "sleep_between_sites_seconds": 3,
-        "sleep_between_stage2_jobs_seconds": 4
+        "max_runtime_minutes": 60,
+        "stage1_max_runtime_minutes": 20,
+        "stage2_max_runtime_minutes": 45,
+        "sleep_between_sites_seconds": 0.5,
+        "sleep_between_stage2_jobs_seconds": 1
     }
 }
 

@@ -12,7 +12,9 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 import argparse
+import hashlib
 import json
+import re
 import time
 
 from scraper.config  import load_config
@@ -20,12 +22,22 @@ from scraper.db      import get_db, now_utc, record_blocked_job, make_job_id
 from scraper.gemini  import ModelPool
 from scraper.jd_fetcher import JDFetcher, extract_core_requirements
 from scraper.filters.eligibility import is_eligible
+from scraper.filters.pre_filter  import normalize_title_for_dedup
 from scraper.prompts import stage2_prompt as stage2_prompts
 
 
 EXP_SAFE     = "SAFE"
 EXP_POSSIBLE = "POSSIBLE"
 EXP_BLOCKED  = "BLOCKED"
+
+
+def make_role_fingerprint(company: str, title: str, jd_text: str = "") -> str:
+    """Stable SHA-256 fingerprint identifying an identical role and JD across locations."""
+    c = re.sub(r"[\s\-_]+", " ", str(company or "").lower()).strip()
+    t = normalize_title_for_dedup(title).lower()
+    text_sample = re.sub(r"\s+", " ", str(jd_text or "")[:1200].lower()).strip()
+    raw = f"{c}|{t}|{text_sample}"
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def score_job(cfg: dict, jd_text: str, pool: ModelPool) -> dict | None:
@@ -61,9 +73,9 @@ def main():
     fetcher = JDFetcher()
     jobs_col = cfg["database"]["jobs_collection"]
     batch_size = cfg["ai_models"].get("stage2_batch_size", 150)
-    max_runtime = cfg.get("runner", {}).get("max_runtime_minutes", 80) * 60
+    max_runtime = cfg.get("runner", {}).get("stage2_max_runtime_minutes", cfg.get("runner", {}).get("max_runtime_minutes", 45)) * 60
     delete_blocked = cfg.get("experience", {}).get("delete_blocked_jobs", True)
-    sleep_delay = cfg.get("runner", {}).get("sleep_between_stage2_jobs_seconds", 3)
+    sleep_delay = cfg.get("runner", {}).get("sleep_between_stage2_jobs_seconds", 1)
 
     if getattr(args, "all", False):
         batch_size = 100000
@@ -91,7 +103,8 @@ def main():
         print("  All eligible jobs have already been verified by Stage 2.\n")
         return
 
-    verified = blocked = skipped = deleted = processed_count = 0
+    verified = blocked = skipped = deleted = processed_count = cached_verdicts_reused = 0
+    role_verdict_cache: dict[str, dict] = {}
     start_time = time.time()
     stop_reason = f"Completed batch of {len(pending)} jobs"
 
@@ -99,7 +112,7 @@ def main():
         for i, job in enumerate(pending, 1):
             processed_count = i
             if time.time() - start_time > max_runtime:
-                stop_reason = f"Hit max runtime limit ({max_runtime // 60} minutes)"
+                stop_reason = f"Hit stage2 max runtime limit ({cfg.get('runner', {}).get('stage2_max_runtime_minutes', 45)} minutes)"
                 print("  [FAIL-SAFE] Approaching runtime limit. Shutting down gracefully...")
                 break
 
@@ -148,7 +161,20 @@ def main():
                 deleted += 1
                 continue
 
-            result = score_job(cfg, jd_text, pool)
+            # Role Dedup: Check in-memory verdict cache before firing Gemini
+            role_fingerprint = make_role_fingerprint(company, title, jd_text)
+            was_cached = False
+
+            if role_fingerprint in role_verdict_cache:
+                result = role_verdict_cache[role_fingerprint]
+                was_cached = True
+                cached_verdicts_reused += 1
+                print(f"  [Role Dedup Cache Hit] Reusing Gemini verdict for '{title}': {result.get('experience_verdict')}")
+            else:
+                result = score_job(cfg, jd_text, pool)
+                if result:
+                    role_verdict_cache[role_fingerprint] = result
+
             if not result:
                 print(f"  Gemini evaluation failed or rate-limited - leaving unverified for next run.")
                 db[jobs_col].update_one(
@@ -194,7 +220,9 @@ def main():
                 db[jobs_col].update_one({"_id": doc_id}, {"$set": update})
                 verified += 1
 
-            time.sleep(sleep_delay)
+            # Only sleep when an actual API call was made to preserve speed on deduplicated batches
+            if not was_cached:
+                time.sleep(sleep_delay)
     finally:
         fetcher.close()
 
@@ -218,6 +246,7 @@ def main():
     print(f"  Blocked & Tombstoned:       {blocked}")
     print(f"  Deleted (ineligible):       {deleted}")
     print(f"  Skipped (error/retry):      {skipped}")
+    print(f"  Dedup Cache Hits Reused:    {cached_verdicts_reused}")
     print(f"  Remaining Pending in Queue: {remaining_pending}")
     print("-" * 60)
     print("  Gemini AI Telemetry:")
@@ -240,6 +269,7 @@ def main():
                     "blocked": blocked,
                     "deleted": deleted,
                     "skipped": skipped,
+                    "cached_verdicts_reused": cached_verdicts_reused,
                     "remaining_pending": remaining_pending,
                     "gemini_calls_fired": total_gemini_calls,
                     "gemini_model_usage": usage,

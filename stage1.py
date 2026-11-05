@@ -22,7 +22,7 @@ from scraper.config import load_config
 from scraper.db     import (
     create_indexes, get_target_urls, now_utc,
     record_site_stats, slug_to_company, upsert_jobs,
-    get_blocked_job_ids, make_job_id,
+    get_blocked_job_ids, make_job_id, get_db,
 )
 from scraper.ats             import process_url as ats_process_url
 from scraper.filters.pre_filter  import pre_filter_jobs
@@ -131,7 +131,7 @@ def main():
 
     chunk_index  = int(os.getenv("CHUNK_INDEX",  "0"))
     total_chunks = int(os.getenv("TOTAL_CHUNKS", "1"))
-    max_runtime  = rcfg.get("max_runtime_minutes", 80) * 60
+    max_runtime  = rcfg.get("stage1_max_runtime_minutes", rcfg.get("max_runtime_minutes", 20)) * 60
     allow_ai_fallback = ai_cfg.get("enable_stage1_ai_fallback", True) and not args.no_ai_fallback
     if allow_ai_fallback and not cfg.get("_gemini_api_key"):
         print("  [!] Notice: GEMINI_API_KEY not provided. Stage 1 Gemini AI fallback disabled.")
@@ -154,10 +154,12 @@ def main():
 
     total_saved = 0
     start_time  = time.time()
+    stop_reason = f"Completed sweep of {len(url_docs)} company career portals"
 
     try:
         for i, doc in enumerate(url_docs, 1):
             if time.time() - start_time > max_runtime:
+                stop_reason = f"Hit stage1 max runtime limit ({rcfg.get('stage1_max_runtime_minutes', 20)} minutes)"
                 print("  [FAIL-SAFE] Approaching time limit. Shutting down gracefully...")
                 break
 
@@ -243,7 +245,7 @@ def main():
     elapsed_secs = time.time() - start_time
     print(f"\n{'=' * 60}")
     print(f"  Stage 1 Execution Summary:")
-    print(f"  Status / Stop Reason:       Completed sweep of {len(urls)} company career portals")
+    print(f"  Status / Stop Reason:       {stop_reason}")
     print(f"  Total Runtime:              {elapsed_secs:.1f}s ({(elapsed_secs / 60):.1f} mins)")
     print(f"  Total Jobs Saved/Updated:   {total_saved}")
     if pool:
@@ -263,9 +265,9 @@ def main():
             {
                 "$set": {
                     "timestamp": now_utc(),
-                    "stop_reason": f"Completed sweep of {len(urls)} company career portals",
+                    "stop_reason": stop_reason,
                     "runtime_seconds": round(elapsed_secs, 1),
-                    "urls_processed": len(urls),
+                    "urls_processed": len(url_docs),
                     "total_jobs_saved": total_saved,
                     "gemini_calls_fired": sum(ai_usage.values()),
                     "gemini_model_usage": ai_usage,

@@ -29,12 +29,14 @@ jobs:
         run: playwright install chromium
 
       - name: Run Stage 1 (Fast ATS Scrape)
+        timeout-minutes: 25
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: python stage1.py
 
       - name: Run Stage 2 (Deep Experience Verification)
+        timeout-minutes: 50
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

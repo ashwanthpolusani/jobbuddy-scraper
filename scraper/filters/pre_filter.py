@@ -4,8 +4,120 @@ Eliminates irrelevant jobs before Gemini to save quota and latency.
 All keyword lists, junior/senior patterns, and salary markers are compiled
 parametrically from scraper.config.json. Zero hardcoded logic.
 """
+import hashlib
 import re
 from scraper.filters.eligibility import is_eligible
+
+
+def normalize_title_for_dedup(title: str) -> str:
+    """
+    Normalizes a job title for clustering and deduplication by stripping
+    location suffixes, parenthesis/bracket location tags, and remote tags.
+    Preserves core discipline, level, and track.
+    
+    Examples:
+      - 'Software Engineer, AI Data - Austin, TX (Remote)' -> 'Software Engineer, AI Data'
+      - 'Junior Python Developer (Bangalore)' -> 'Junior Python Developer'
+      - 'Data Analyst - Remote' -> 'Data Analyst'
+      - 'Frontend Engineer | Remote' -> 'Frontend Engineer'
+    """
+    t = str(title or "").strip()
+    if not t:
+        return ""
+    # 1. Remove bracketed/parenthetical qualifiers e.g. (Remote), (Hybrid), [US Only], (Pune)
+    t = re.sub(r"\s*[\(\[][^)\]]*[\)\]]", "", t)
+    # 2. Repeatedly strip trailing location or remote separators: e.g. ' - Austin, TX', ' | Remote', ' - Pune / Remote'
+    pattern = re.compile(
+        r"\s*[-–—|/]\s*(?:remote|hybrid|in[- ]person|onsite|wfh|india|bengaluru|bangalore|hyderabad|pune|mumbai|delhi|noida|chennai|us|usa|uk|emea|latam|[a-zA-Z\s,]+)\s*$",
+        re.IGNORECASE
+    )
+    for _ in range(3):
+        prev = t
+        subbed = pattern.sub("", t).strip()
+        if not subbed or subbed == prev:
+            break
+        t = subbed
+    # 3. Collapse multiple spaces
+    t = re.sub(r"\s+", " ", t).strip()
+    return t or str(title or "").strip()
+
+
+def deduplicate_and_consolidate_roles(cfg: dict, jobs: list[dict]) -> list[dict]:
+    """
+    Consolidates identical job postings across multiple locations into a single representative job.
+    e.g. When a company posts the identical role across 200+ cities with the same JD:
+    - Normalizes title and creates a fingerprint from (company, normalized_title, content_hash).
+    - Selects the best eligible posting (preferring Indian tech hubs, then India, then Worldwide Remote).
+    - Collects all locations into 'other_locations' and updates 'location_summary'.
+    - Returns a deduplicated list with 1 representative job per unique position.
+    """
+    if not jobs:
+        return []
+
+    loc_cfg = cfg.get("locations", {})
+    tech_hubs = [h.strip().lower() for h in loc_cfg.get("indian_tech_hubs", []) if h.strip()]
+
+    def is_indian_hub(loc: str) -> bool:
+        l = str(loc or "").lower()
+        return any(h in l for h in tech_hubs) or "india" in l or bool(re.search(r"\bin\s*-\s*", l))
+
+    def is_ww_remote(loc: str, title: str) -> bool:
+        comb = f"{loc} {title}".lower()
+        return any(w in comb for w in ["worldwide", "global", "anywhere", "work from anywhere", "remote"])
+
+    def location_score(j: dict) -> int:
+        loc = str(j.get("location") or "")
+        title = str(j.get("title") or "")
+        if is_indian_hub(loc):
+            return 3  # Highest priority: India tech hub
+        if "india" in loc.lower() or "india" in title.lower():
+            return 2  # India general
+        if is_ww_remote(loc, title):
+            return 1  # Worldwide Remote
+        return 0
+
+    groups: dict[str, list[dict]] = {}
+
+    for j in jobs:
+        company = str(j.get("company_name", "")).strip().lower()
+        title = str(j.get("title", "")).strip()
+        norm_title = normalize_title_for_dedup(title).lower()
+
+        content = str(j.get("content") or j.get("core_requirements") or "").strip().lower()
+        if len(content) >= 100:
+            clean_content = re.sub(r"\s+", " ", content[:1200])
+            content_hash = hashlib.md5(clean_content.encode("utf-8")).hexdigest()
+        else:
+            content_hash = "no_content"
+
+        group_key = f"{company}|{norm_title}|{content_hash}"
+        groups.setdefault(group_key, []).append(j)
+
+    consolidated = []
+    for group_key, items in groups.items():
+        if len(items) == 1:
+            consolidated.append(items[0])
+            continue
+
+        # Sort items by location preference score descending
+        items.sort(key=location_score, reverse=True)
+        winner = dict(items[0])
+
+        all_locations = []
+        for it in items:
+            l = str(it.get("location") or "").strip()
+            if l and l not in all_locations:
+                all_locations.append(l)
+
+        if len(all_locations) > 1:
+            winner["other_locations"] = [l for l in all_locations if l != winner.get("location")]
+            winner["locations_count"] = len(all_locations)
+            base_loc = winner.get("location") or "Multiple Locations"
+            winner["location_summary"] = f"{base_loc} (+{len(all_locations) - 1} locations)"
+
+        consolidated.append(winner)
+
+    return consolidated
 
 
 def pre_filter_jobs(cfg: dict, jobs: list[dict]) -> list[dict]:
@@ -150,12 +262,15 @@ def pre_filter_jobs(cfg: dict, jobs: list[dict]) -> list[dict]:
 
         good.append(j)
 
+    # Deduplicate and consolidate identical roles across multiple locations
+    consolidated = deduplicate_and_consolidate_roles(cfg, good)
+
     # Prioritization
     if skills_regex:
-        good.sort(key=lambda x: 0 if skills_regex.search(x.get("title", "")) else 1)
+        consolidated.sort(key=lambda x: 0 if skills_regex.search(x.get("title", "")) else 1)
     elif only_intern and intern_regex:
-        good.sort(key=lambda x: 0 if intern_regex.search(x.get("title", "")) else 1)
+        consolidated.sort(key=lambda x: 0 if intern_regex.search(x.get("title", "")) else 1)
     elif fresher_regex and max_years <= 1:
-        good.sort(key=lambda x: 0 if fresher_regex.search(x.get("title", "")) else 1)
+        consolidated.sort(key=lambda x: 0 if fresher_regex.search(x.get("title", "")) else 1)
 
-    return good
+    return consolidated
