@@ -211,7 +211,7 @@ DEFAULT_CONFIG = {
         "rpd_limit": 1500,
         "stage1_chunk_size": 50,
         "stage1_max_chunks_per_site": 4,
-        "stage2_batch_size": 200,
+        "stage2_batch_size": 1000,
         "enable_stage1_ai_fallback": True
     },
     "database": {
@@ -224,9 +224,9 @@ DEFAULT_CONFIG = {
         "stats_ttl_days": 14
     },
     "runner": {
-        "max_runtime_minutes": 60,
-        "stage1_max_runtime_minutes": 20,
-        "stage2_max_runtime_minutes": 45,
+        "max_runtime_minutes": 120,
+        "stage1_max_runtime_minutes": 30,
+        "stage2_max_runtime_minutes": 100,
         "sleep_between_sites_seconds": 0.5,
         "sleep_between_stage2_jobs_seconds": 1
     }

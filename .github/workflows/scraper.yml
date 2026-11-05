@@ -10,7 +10,7 @@ jobs:
   scraper-pipeline:
     name: "Rolenaut Daily Scraper & Verification"
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
 
     steps:
       - name: Checkout repository
@@ -29,14 +29,14 @@ jobs:
         run: playwright install chromium
 
       - name: Run Stage 1 (Fast ATS Scrape)
-        timeout-minutes: 25
+        timeout-minutes: 35
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: python stage1.py
 
       - name: Run Stage 2 (Deep Experience Verification)
-        timeout-minutes: 50
+        timeout-minutes: 135
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
