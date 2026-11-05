@@ -29,7 +29,7 @@ from scraper.filters.pre_filter  import pre_filter_jobs
 from scraper.filters.eligibility import is_eligible
 from scraper.filters.classifier  import normalize_job_classification
 from scraper.jd_fetcher import JDFetcher, extract_core_requirements
-from scraper.gemini     import ModelPool
+from scraper.gemini     import ModelPool, clean_llm_json
 from scraper.prompts    import stage1_prompt as stage1_prompts
 
 
@@ -48,7 +48,8 @@ def extract_jobs_with_ai(cfg: dict, pool: ModelPool, fetcher: JDFetcher, url: st
     prompt = stage1_prompts.build(cfg, raw_text[:12000])
     try:
         resp_text = pool.generate(prompt)
-        data = json.loads(resp_text)
+        cleaned = clean_llm_json(resp_text)
+        data = json.loads(cleaned)
         if isinstance(data, list):
             jobs = []
             for item in data:
@@ -153,6 +154,7 @@ def main():
         fetcher = JDFetcher()
 
     total_saved = 0
+    processed_count = 0
     start_time  = time.time()
     stop_reason = f"Completed sweep of {len(url_docs)} company career portals"
 
@@ -162,6 +164,8 @@ def main():
                 stop_reason = f"Hit stage1 max runtime limit ({rcfg.get('stage1_max_runtime_minutes', 20)} minutes)"
                 print("  [FAIL-SAFE] Approaching time limit. Shutting down gracefully...")
                 break
+
+            processed_count = i
 
             url = doc["url"]
             company_name = doc.get("company_name", slug_to_company(url))
@@ -267,7 +271,8 @@ def main():
                     "timestamp": now_utc(),
                     "stop_reason": stop_reason,
                     "runtime_seconds": round(elapsed_secs, 1),
-                    "urls_processed": len(url_docs),
+                    "urls_processed": processed_count,
+                    "total_urls_queued": len(url_docs),
                     "total_jobs_saved": total_saved,
                     "gemini_calls_fired": sum(ai_usage.values()),
                     "gemini_model_usage": ai_usage,

@@ -2,9 +2,40 @@
 gemini.py - Dual-model Gemini pool with round-robin load balancing and instant failover.
 Only sleeps when BOTH models are rate-limited. Config-driven limits.
 """
+import re
 import time
 
 from google import genai
+
+
+def clean_llm_json(raw: str) -> str:
+    """
+    Robustly strips markdown fences and extracts valid JSON payload from LLM responses.
+    Handles:
+    - ```json ... ```
+    - ``` ... ```
+    - Conversational prose before or after the JSON block
+    """
+    if not raw:
+        return ""
+    text = str(raw).strip()
+    m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    
+    # Fallback: scan for first '{' or '[' to matching last '}' or ']'
+    start_obj = text.find("{")
+    start_arr = text.find("[")
+    if start_obj != -1 and (start_arr == -1 or start_obj < start_arr):
+        end_obj = text.rfind("}")
+        if end_obj != -1:
+            return text[start_obj:end_obj + 1].strip()
+    elif start_arr != -1:
+        end_arr = text.rfind("]")
+        if end_arr != -1:
+            return text[start_arr:end_arr + 1].strip()
+            
+    return text
 
 
 class ModelPool:
@@ -80,7 +111,7 @@ class ModelPool:
                     )
                     self._record_use(model)
                     print(f"  [OK] [{model}] responded")
-                    return response.text
+                    return response.text or ""
                 except Exception as e:
                     err = str(e)
                     if "429" in err or "Quota" in err or "503" in err:

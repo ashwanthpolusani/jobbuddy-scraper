@@ -38,7 +38,7 @@ def fetch_jobs(slug: str) -> list[dict] | None:
                         "link":     j.get("absolute_url", ""),
                         "content":  j.get("content", ""),
                     }
-                    for j in data.get("jobs", [])
+                    for j in (data.get("jobs") or [])
                 ]
         except HTTPError as e:
             if e.code == 404:

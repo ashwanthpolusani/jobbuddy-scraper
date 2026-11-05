@@ -1,0 +1,1 @@
+"""JobBuddy Scraper Test Suite."""

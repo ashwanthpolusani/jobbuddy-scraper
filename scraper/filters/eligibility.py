@@ -154,7 +154,6 @@ def is_eligible(cfg: dict, job: dict) -> tuple[bool, str]:
                 if tz.strip() and re.search(rf"\b{re.escape(tz.strip())}\b", loc, re.IGNORECASE):
                     return False, f"Region-locked timezone remote role ({loc})"
         return True, "Worldwide Remote"
-        return True, f"Home country matched: {primary}"
 
     # 3D. Custom Target Cities
     custom_cities = [c for c in allowed_cities if c not in ("all india", "anywhere in india", "india", "remote", "remote only")]

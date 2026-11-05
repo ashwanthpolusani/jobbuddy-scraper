@@ -279,6 +279,13 @@ def upsert_jobs(cfg: dict, jobs: list[dict], ats_name: str = "") -> int:
                 "ats_name": ats_name,
                 "source_url": job.get("source_url", ""),
             }
+            # Multi-location consolidation fields (refreshed on recurring sweeps)
+            if job.get("location_summary"):
+                always_set["location_summary"] = job["location_summary"]
+            if job.get("other_locations"):
+                always_set["other_locations"] = job["other_locations"]
+            if job.get("locations_count"):
+                always_set["locations_count"] = job["locations_count"]
 
             # Protected fields set ONLY on insert (never clobbers Stage 2 verified data)
             set_on_insert = {
@@ -296,6 +303,12 @@ def upsert_jobs(cfg: dict, jobs: list[dict], ats_name: str = "") -> int:
             }
             if job.get("content"):
                 set_on_insert["content"] = job["content"]
+            if "other_locations" in job and "other_locations" not in always_set:
+                set_on_insert["other_locations"] = job["other_locations"]
+            if "locations_count" in job and "locations_count" not in always_set:
+                set_on_insert["locations_count"] = job["locations_count"]
+            if "location_summary" in job and "location_summary" not in always_set:
+                set_on_insert["location_summary"] = job["location_summary"]
 
             db[col].update_one(
                 filter_doc,
