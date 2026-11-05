@@ -2,8 +2,9 @@ name: Rolenaut Scraper Pipeline
 
 on:
   schedule:
-    # Runs at 08:30 IST (03:00 UTC) every day
-    - cron: "0 3 * * *"
+    # Runs at 05:47 AM IST (00:17 UTC) every early morning
+    # Off-peak prime minute (17) avoids GitHub runner scheduling queues
+    - cron: "17 0 * * *"
   workflow_dispatch: # Allows manual trigger
 
 jobs:
