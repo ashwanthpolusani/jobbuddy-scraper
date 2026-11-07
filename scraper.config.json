@@ -291,7 +291,6 @@
     ],
     "detect_early_career_programs": true,
     "early_career_program_patterns": [
-      "program",
       "cohort",
       "talent network",
       "talent community",
@@ -307,7 +306,12 @@
       "internship program",
       "leadership development",
       "rotational program",
-      "student careers"
+      "student careers",
+      "leadership program",
+      "ambassador program",
+      "creator program",
+      "fellowship program",
+      "incubator program"
     ],
     "category_patterns": {
       "software_engineering": [
@@ -485,9 +489,9 @@
     "currency_preference": "ANY",
     "salary_keywords": [
       "$",
-      "€",
-      "£",
-      "₹",
+      "\u20ac",
+      "\u00a3",
+      "\u20b9",
       "inr",
       "usd",
       "eur",
@@ -592,7 +596,7 @@
     "stage1_max_runtime_minutes": 30,
     "stage2_max_runtime_minutes": 100,
     "sleep_between_sites_seconds": 0.5,
-    "sleep_between_stage2_jobs_seconds": 1
+    "sleep_between_stage2_jobs_seconds": 2.0
   },
   "$schema": "./scraper.config.schema.json"
 }

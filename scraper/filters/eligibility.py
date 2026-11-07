@@ -47,8 +47,16 @@ def _compile_rejection_patterns(cfg: dict):
     langs = rules.get("foreign_languages", ["japanese", "german", "deutsch", "french", "mandarin", "chinese", "korean", "spanish", "italian"])
     tests_pat = "|".join(map(re.escape, lang_tests))
     langs_pat = "|".join(map(re.escape, langs))
+    # Match foreign language requirements in BOTH word orderings:
+    #   • Language → modifier  : "Japanese required", "Japanese fluency"
+    #   • Modifier → language  : "business-level Japanese", "fluent in Japanese", "native Japanese"
+    # The original single-direction pattern missed cases like "business-level Japanese"
+    # allowing Job #09 (Mercari Group Corporate Planning) to slip through Stage 2.
+    _modifiers = r"mandatory|required|must have|fluent|fluency|business.?level|native|bilingual|proficiency"
     foreign_lang_regex = re.compile(
-        rf"\b(?:{tests_pat})\b|\b(?:{langs_pat})\b[^\.\n;]{{0,60}}\b(?:mandatory|required|must have|fluent|fluency|business level|native|bilingual)\b",
+        rf"\b(?:{tests_pat})\b"
+        rf"|\b(?:{langs_pat})\b[^\.\n;]{{0,60}}\b(?:{_modifiers})\b"
+        rf"|\b(?:{_modifiers})\b[^\.\n;]{{0,60}}\b(?:{langs_pat})\b",
         re.IGNORECASE
     ) if (lang_tests or langs) else None
 

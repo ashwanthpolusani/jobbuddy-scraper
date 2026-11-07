@@ -191,12 +191,23 @@ def pre_filter_jobs(cfg: dict, jobs: list[dict]) -> list[dict]:
         re.IGNORECASE
     ) if domain_keywords else None
 
+    # Hard reject junk non-job postings (talent community lead captures, ambassador programs, etc.)
+    junk_posting_regex = re.compile(
+        r"\b(?:join (?:our|.*?) talent community|talent community|talent network|talent pool|creator program|campus (?:crew )?ambassador|student ambassador)\b",
+        re.IGNORECASE
+    )
+
     good = []
     for j in jobs:
         title = str(j.get("title") or "").strip()
         if not title:
             continue
         t_lower = title.lower()
+
+        # 0. Junk Lead-Capture / Ambassador Gate
+        if junk_posting_regex.search(t_lower):
+            continue
+
         content = str(j.get("content") or j.get("core_requirements") or "").lower()
 
         # 1. Internships Only Gate

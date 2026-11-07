@@ -168,7 +168,12 @@ def main():
             processed_count = i
 
             url = doc["url"]
-            company_name = doc.get("company_name", slug_to_company(url))
+            # Guard against stale placeholder company names that were seeded into
+            # target_urls before slug_to_company() handled Workable URLs correctly.
+            # Also catches Uber's "Jobs" placeholder from the Uber ATS adapter config.
+            _cname = (doc.get("company_name") or "").strip()
+            _PLACEHOLDER_NAMES = {"apply", "unknown", "jobs", "careers", ""}
+            company_name = _cname if _cname.lower() not in _PLACEHOLDER_NAMES else slug_to_company(url)
             print(f"\n[{i}/{len(url_docs)}] {company_name}")
 
             is_api, api_jobs, ats_name = ats_process_url(url)

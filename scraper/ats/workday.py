@@ -15,7 +15,7 @@ def extract_params(url: str) -> tuple[str, str, str] | None:
     tenant = match.group(1)
     domain = f"{tenant}.{match.group(2)}"
     site   = match.group(3)
-    if site.startswith("job") or site.startswith("login"):
+    if site == "job" or site.startswith("job/") or site.startswith("login"):
         return None
     return tenant, domain, site
 

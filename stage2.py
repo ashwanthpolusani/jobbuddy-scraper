@@ -148,7 +148,10 @@ def main():
                 print(f"  Could not fetch JD - leaving unverified for next run.")
                 db[jobs_col].update_one(
                     {"_id": doc_id},
-                    {"$inc": {"stage2_retries": 1}, "$set": {"last_stage2_error": now_utc()}}
+                    {"$inc": {"stage2_retries": 1}, "$set": {
+                        "last_stage2_error":    "Could not fetch JD",
+                        "last_stage2_error_at": now_utc(),
+                    }}
                 )
                 skipped += 1
                 continue
@@ -161,6 +164,11 @@ def main():
                 db[jobs_col].delete_one({"_id": doc_id})
                 deleted += 1
                 continue
+
+            # Check if this role qualifies as an explicit visa sponsored foreign role
+            is_visa_sponsored = False
+            if "relocation or visa sponsorship" in reason.lower() or "visa sponsorship provided" in reason.lower():
+                is_visa_sponsored = True
 
             # Role Dedup: Check in-memory verdict cache before firing Gemini
             role_fingerprint = make_role_fingerprint(company, title, jd_text)
@@ -180,7 +188,10 @@ def main():
                 print(f"  Gemini evaluation failed or rate-limited - leaving unverified for next run.")
                 db[jobs_col].update_one(
                     {"_id": doc_id},
-                    {"$inc": {"stage2_retries": 1}, "$set": {"last_stage2_error": now_utc()}}
+                    {"$inc": {"stage2_retries": 1}, "$set": {
+                        "last_stage2_error":    "Gemini evaluation failed or rate-limited",
+                        "last_stage2_error_at": now_utc(),
+                    }}
                 )
                 skipped += 1
                 continue
@@ -217,6 +228,11 @@ def main():
                 }
                 if reqs:
                     update["core_requirements"] = reqs
+                if is_visa_sponsored:
+                    update["visa_sponsored"] = True
+                # Enrich job document with fetched JD content if missing or short
+                if len(str(job.get("content") or "").strip()) < 200 and jd_text:
+                    update["content"] = jd_text[:20000]
 
                 db[jobs_col].update_one({"_id": doc_id}, {"$set": update})
                 verified += 1

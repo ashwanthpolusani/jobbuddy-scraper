@@ -15,18 +15,28 @@ def extract_slug(url: str) -> str | None:
 
 
 def fetch_jobs(slug: str) -> list[dict] | None:
-    """Fetch jobs from Workable public widget API."""
+    """Fetch jobs from Workable public widget API.
+
+    The Workable widget API returns ``data["name"]`` as the canonical company
+    name (e.g. ``"Mercari, inc."``). We capture it here so that
+    ``stage1.py``'s fallback company name (derived from the ``target_urls``
+    document) is never needed for Workable jobs.
+    """
     url = f"https://apply.workable.com/api/v1/widget/accounts/{slug}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=12) as resp:
             data = json.loads(resp.read().decode("utf-8"))
+            # Prefer the name field from the API; fall back to a human-readable
+            # slug derivation so we never store placeholder values like "Apply".
+            company_name = (data.get("name") or "").strip() or slug.replace("-", " ").replace("_", " ").title()
             return [
                 {
-                    "title":    j.get("title", ""),
-                    "location": ", ".join(filter(None, [j.get("city", ""), j.get("country", "")])),
-                    "link":     f"https://apply.workable.com/{slug}/j/{j.get('shortcode', '')}",
-                    "content":  "",
+                    "title":        j.get("title", ""),
+                    "company_name": company_name,
+                    "location":     ", ".join(filter(None, [j.get("city", ""), j.get("country", "")])),
+                    "link":         f"https://apply.workable.com/{slug}/j/{j.get('shortcode', '')}",
+                    "content":      "",
                 }
                 for j in data.get("jobs", [])
             ]

@@ -34,5 +34,12 @@ def fetch_jobs(domain: str) -> list[dict]:
 def process(url: str) -> tuple[bool, list[dict], str]:
     match = re.search(r"https://([^/]+\.mynexthire\.com)", url)
     if match:
-        return True, fetch_jobs(match.group(1)), "MyNextHire"
+        jobs = fetch_jobs(match.group(1))
+        # Return fetch_success=False when the API returns nothing (e.g. HTTP 402
+        # Payment Required from expired/terminated MyNextHire tenants).  This
+        # ensures site_stats correctly records fetch_success: false instead of
+        # masking the failure as a successful zero-result sweep.
+        if not jobs:
+            return False, [], "MyNextHire"
+        return True, jobs, "MyNextHire"
     return False, [], "MyNextHire"
