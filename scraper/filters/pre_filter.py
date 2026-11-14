@@ -225,10 +225,10 @@ def pre_filter_jobs(cfg: dict, jobs: list[dict]) -> list[dict]:
             if senior_regex and (senior_regex.search(t_lower) or senior_regex.search(t_normalized)):
                 continue
 
-            # Check explicit experience requirements in title (e.g. 'Experience: 4 - 8 yrs', '3+ yrs exp')
+            # Check explicit experience requirements in title (e.g. 'Experience: 4 - 8 yrs', '3+ yrs exp', '3-4 years of experience')
             title_exp = re.search(
                 r"(?i)(?:(?:exp(?:erience)?|yoe)[\s:\-]*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*(?:yrs?|years?))|"
-                r"\b(\d+)\+?\s*(?:yrs?|years?)\s*(?:exp|experience|yoe)\b",
+                r"\b(\d+)(?:\s*(?:-|to)\s*(\d+))?\+?\s*(?:yrs?|years?)(?:\s+of)?\s*(?:exp|experience|yoe)\b",
                 title
             )
             if title_exp:

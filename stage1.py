@@ -197,11 +197,19 @@ def main():
             else:
                 print(f"  [*] ATS: {ats_name} API")
 
+            if api_jobs is None:
+                fetch_time = int((time.time() - fetch_start) * 1000)
+                print(f"  -> Fetch failed or HTTP error via {ats_name}.")
+                record_site_stats(cfg, url, False, fetch_time, [], f"{ats_name} fetch failed or HTTP error",
+                                  ats_name=ats_name, jobs_seen=0, company_name=company_name)
+                continue
+
             jobs_seen = len(api_jobs)
 
             if not api_jobs:
+                fetch_time = int((time.time() - fetch_start) * 1000)
                 print(f"  -> 0 total open roles via {ats_name}.")
-                record_site_stats(cfg, url, True, 0, [], None,
+                record_site_stats(cfg, url, True, fetch_time, [], None,
                                   ats_name=ats_name, jobs_seen=0, company_name=company_name)
                 continue
 

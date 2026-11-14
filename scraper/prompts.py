@@ -144,6 +144,10 @@ EXPERIENCE CLAUSE DISAMBIGUATION RULES:
   * In "core_requirements", clearly state: "Bachelor's degree in Computer Science/Engineering (or X years experience in lieu of degree), [key skills]."
 - "Degree AND X+ years experience" / "Requires strictly X+ years experience":
   * This is a mandatory experience requirement. If X > {threshold}, classify strictly as "BLOCKED".
+  * Standard corporate boilerplate such as "Bachelor's degree or equivalent practical experience" DOES NOT negate an explicit mandatory 2+, 3+, or 5+ years experience requirement listed elsewhere in the requirements section! If an explicit minimum of >{threshold} years is required, classify strictly as "BLOCKED".
+  * Never classify a role as "SAFE" or "POSSIBLE" if it requests >{threshold} years of professional experience.
+- MANDATORY EVIDENCE IN VERDICT REASON:
+  * In "verdict_reason", you MUST quote the exact text stating the experience requirement or lack thereof. Do NOT claim "requires no prior years" if the text specifies a minimum year count.
 
 1. "experience_verdict":
    - "SAFE": Posting matches candidate target experience ({min_y}-{max_y} years), OR explicitly targets interns, apprentices, trainees, new grads, campus hires, or entry-level.

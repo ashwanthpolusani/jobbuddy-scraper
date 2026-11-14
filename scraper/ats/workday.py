@@ -35,7 +35,13 @@ def fetch_jobs(url: str) -> list[dict]:
     all_jobs, offset, limit, max_pages, page = [], 0, 20, 250, 0
     try:
         while page < max_pages:
-            data = json.dumps({"limit": limit, "offset": offset}).encode("utf-8")
+            payload = {
+                "appliedFacets": {},
+                "limit": limit,
+                "offset": offset,
+                "searchText": ""
+            }
+            data = json.dumps(payload).encode("utf-8")
             req  = urllib.request.Request(api_url, data=data, headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=15) as resp:
                 resp_data = json.loads(resp.read().decode("utf-8"))

@@ -55,7 +55,7 @@ class BaseATSAdapter(ABC):
             return False, [], self.name
         try:
             jobs = self.fetch_jobs(url, company_name)
-            return True, jobs, self.name
+            return True, jobs if jobs is not None else [], self.name
         except Exception as e:
             print(f"    [{self.name} Adapter Error] {e}")
             return True, [], self.name

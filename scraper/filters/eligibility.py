@@ -124,23 +124,36 @@ def is_eligible(cfg: dict, job: dict) -> tuple[bool, str]:
         or loc.strip().lower() in ("global", "anywhere", "worldwide")
     )
 
+    def _matches_region(reg: str) -> bool:
+        reg_clean = reg.strip().lower()
+        if not reg_clean:
+            return False
+        # For 2-letter codes, only check loc to avoid false matches on common English words in title ('IT', 'at', 'be')
+        if len(reg_clean) <= 2:
+            pat = rf"(?<!\w){re.escape(reg_clean)}(?!\w)"
+            return bool(re.search(pat, loc, re.IGNORECASE))
+        else:
+            pat = rf"(?<!\w){re.escape(reg_clean)}(?!\w)"
+            return bool(re.search(pat, loc, re.IGNORECASE) or re.search(pat, title, re.IGNORECASE))
+
     # 3A. Candidate Requested "Remote Only"
     if "remote only" in allowed_cities:
         if is_remote_job:
             if rem_cfg.get("reject_region_locked_remote", True):
                 for reg in rem_cfg.get("restricted_regions", []):
-                    if reg.strip() and re.search(rf"\b{re.escape(reg.strip())}\b", loc, re.IGNORECASE):
+                    if _matches_region(reg):
                         return False, f"Region-locked remote role ({loc})"
                 for tz in rem_cfg.get("restricted_timezones", []):
-                    if tz.strip() and re.search(rf"\b{re.escape(tz.strip())}\b", loc, re.IGNORECASE):
+                    if _matches_region(tz):
                         return False, f"Region-locked timezone remote role ({loc})"
             return True, "Worldwide Remote"
         return False, "Non-remote role rejected (Candidate requested Remote Only)"
 
     # 3B. Primary Country Location Match (India by default)
     if primary == "india" or any(c in ("all india", "anywhere in india", "india") for c in allowed_cities):
-        hub_pattern = r"\b(?:" + "|".join(map(re.escape, tech_hubs)) + r")\b|\bIN\s*-\s*[a-zA-Z]+|\bIndia\b"
-        if re.search(hub_pattern, loc, re.IGNORECASE) or re.search(hub_pattern, title, re.IGNORECASE):
+        hub_pattern = r"\b(?:" + "|".join(map(re.escape, tech_hubs)) + r")\b|\bIndia\b|\bIN\s*-\s*(?:[A-Z]{2}\b|Bengaluru|Bangalore|Hyderabad|Pune|Mumbai|Noida|Delhi|Gurgaon|Chennai)"
+        title_hub_pattern = r"\b(?:" + "|".join(map(re.escape, tech_hubs)) + r")\b|\bIndia\b"
+        if re.search(hub_pattern, loc, re.IGNORECASE) or re.search(title_hub_pattern, title, re.IGNORECASE):
             target_cities = [c for c in allowed_cities if c not in ("all india", "anywhere in india", "india", "remote", "remote only")]
             if target_cities:
                 target_pat = r"\b(?:" + "|".join(map(re.escape, target_cities)) + r")\b"
@@ -156,10 +169,10 @@ def is_eligible(cfg: dict, job: dict) -> tuple[bool, str]:
     if is_remote_job and rem_cfg.get("allow_worldwide_remote", True):
         if rem_cfg.get("reject_region_locked_remote", True):
             for reg in rem_cfg.get("restricted_regions", []):
-                if reg.strip() and re.search(rf"\b{re.escape(reg.strip())}\b", loc, re.IGNORECASE):
+                if _matches_region(reg):
                     return False, f"Region-locked remote role ({loc})"
             for tz in rem_cfg.get("restricted_timezones", []):
-                if tz.strip() and re.search(rf"\b{re.escape(tz.strip())}\b", loc, re.IGNORECASE):
+                if _matches_region(tz):
                     return False, f"Region-locked timezone remote role ({loc})"
         return True, "Worldwide Remote"
 

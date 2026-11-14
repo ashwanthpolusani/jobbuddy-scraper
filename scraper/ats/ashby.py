@@ -13,6 +13,30 @@ def extract_slug(url: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _normalize_location(j: dict) -> str:
+    loc_name = (j.get("location") or "").strip()
+    addr = j.get("address") or {}
+    postal = addr.get("postalAddress") or {}
+    country = (postal.get("addressCountry") or "").strip()
+    region = (postal.get("addressRegion") or "").strip()
+
+    parts = []
+    if loc_name and loc_name != "Unknown Location":
+        parts.append(loc_name)
+    if region and region.lower() not in loc_name.lower():
+        parts.append(region)
+    if country and country.lower() not in loc_name.lower():
+        parts.append(country)
+
+    full = ", ".join(parts)
+    if j.get("isRemote"):
+        if not full:
+            return "Remote"
+        if "remote" not in full.lower():
+            return f"{full} (Remote)"
+    return full or "Unknown Location"
+
+
 def fetch_jobs(slug: str) -> list[dict] | None:
     """Fetch and normalize Ashby jobs via their public API."""
     api_url = f"https://api.ashbyhq.com/posting-api/job-board/{slug}"
@@ -23,7 +47,7 @@ def fetch_jobs(slug: str) -> list[dict] | None:
             return [
                 {
                     "title":    j.get("title", "Unknown Title"),
-                    "location": f"{j.get('location', '')} (Remote)".strip() if j.get("isRemote") and "remote" not in str(j.get("location", "")).lower() else j.get("location", "Unknown Location"),
+                    "location": _normalize_location(j),
                     "link":     j.get("jobUrl", ""),
                     "content":  j.get("descriptionPlain", ""),
                 }
