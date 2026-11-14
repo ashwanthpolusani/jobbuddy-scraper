@@ -43,7 +43,7 @@ def fetch_jobs(slug: str) -> list[dict] | None:
         except HTTPError as e:
             if e.code == 404:
                 continue
-            print(f"    [Greenhouse API Blocked for {slug}] HTTP {e.code}")
+            print(f"    [Greenhouse API Blocked] HTTP {e.code}")
             return None
         except Exception as e:
             return []

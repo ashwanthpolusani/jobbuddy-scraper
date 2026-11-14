@@ -54,7 +54,7 @@ def fetch_jobs(slug: str) -> list[dict] | None:
                 for j in data.get("jobs", [])
             ]
     except HTTPError as e:
-        print(f"    [Ashby API Blocked for {slug}] HTTP {e.code}")
+        print(f"    [Ashby API Blocked] HTTP {e.code}")
         return None
     except Exception as e:
         print(f"    [Ashby API Error] {e}")

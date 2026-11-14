@@ -43,7 +43,7 @@ def fetch_jobs(token: str) -> list[dict]:
                 if offset >= total:
                     break
     except Exception as e:
-        print(f"    [SmartRecruiters API Error for {token}] {e}")
+        print(f"    [SmartRecruiters API Error] {e}")
     return all_jobs
 
 

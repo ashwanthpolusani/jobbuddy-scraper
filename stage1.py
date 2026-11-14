@@ -31,6 +31,7 @@ from scraper.filters.classifier  import normalize_job_classification
 from scraper.jd_fetcher import JDFetcher, extract_core_requirements
 from scraper.gemini     import ModelPool, clean_llm_json
 from scraper.prompts    import stage1_prompt as stage1_prompts
+from scraper.privacy    import register_ci_masks, format_site_header, IS_CI
 
 
 def extract_jobs_with_ai(cfg: dict, pool: ModelPool, fetcher: JDFetcher, url: str, company_name: str) -> list[dict]:
@@ -144,7 +145,8 @@ def main():
         url_docs = url_docs[:args.limit]
         print(f"  [Limit] Restricted to first {len(url_docs)} sites.")
 
-    print(f"  URLs to process: {len(url_docs)}")
+    register_ci_masks([doc.get("url", "") for doc in url_docs])
+    print(f"  Target sites to process: {len(url_docs)}")
     print(f"  Engine Mode: High-Speed Pure Python ATS (Gemini AI Fallback: {'Enabled' if allow_ai_fallback else 'Disabled'})\n")
 
     pool = None
@@ -174,10 +176,9 @@ def main():
             _cname = (doc.get("company_name") or "").strip()
             _PLACEHOLDER_NAMES = {"apply", "unknown", "jobs", "careers", ""}
             company_name = _cname if _cname.lower() not in _PLACEHOLDER_NAMES else slug_to_company(url)
-            print(f"\n[{i}/{len(url_docs)}] {company_name}")
-
             is_api, api_jobs, ats_name = ats_process_url(url)
             fetch_start = time.time()
+            print(format_site_header(i, len(url_docs), company_name, ats_name))
 
             # If no ATS router matched, attempt Gemini AI extraction fallback if enabled
             if not is_api:
@@ -194,7 +195,7 @@ def main():
                     record_site_stats(cfg, url, False, 0, [], "Unsupported URL format",
                                       ats_name="Unknown", company_name=company_name)
                     continue
-            else:
+            elif not IS_CI:
                 print(f"  [*] ATS: {ats_name} API")
 
             if api_jobs is None:

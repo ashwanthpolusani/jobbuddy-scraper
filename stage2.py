@@ -24,6 +24,7 @@ from scraper.jd_fetcher import JDFetcher, extract_core_requirements
 from scraper.filters.eligibility import is_eligible
 from scraper.filters.pre_filter  import normalize_title_for_dedup
 from scraper.prompts import stage2_prompt as stage2_prompts
+from scraper.privacy import format_role_header, format_role_deletion, should_display_raw_links, IS_CI
 
 
 EXP_SAFE     = "SAFE"
@@ -127,14 +128,16 @@ def main():
             # 1. Location & Visa Gate check
             ok, reason = is_eligible(cfg, job)
             if not ok:
-                print(f"[{i}/{len(pending)}] [Deleted] Ineligible: {title} ({loc}) -> {reason}")
+                print(format_role_deletion(i, len(pending), title, reason, loc))
                 record_blocked_job(cfg, jid, link, f"Ineligible location/visa: {reason}")
                 db[jobs_col].delete_one({"_id": doc_id})
                 deleted += 1
                 continue
 
-            print(f"[{i}/{len(pending)}] {title} @ {company} ({loc})")
-            print(f"  -> {link}")
+            category = job.get("category", "")
+            print(format_role_header(i, len(pending), title, company, category, loc))
+            if should_display_raw_links():
+                print(f"  -> {link}")
 
             # Re-use content if already captured in Stage 1 to avoid redundant network / browser fetch
             cached_content = str(job.get("content") or "").strip()
@@ -178,7 +181,10 @@ def main():
                 result = role_verdict_cache[role_fingerprint]
                 was_cached = True
                 cached_verdicts_reused += 1
-                print(f"  [Role Dedup Cache Hit] Reusing Gemini verdict for '{title}': {result.get('experience_verdict')}")
+                if IS_CI:
+                    print(f"  [Role Dedup Cache Hit] Reusing Gemini verdict: {result.get('experience_verdict')}")
+                else:
+                    print(f"  [Role Dedup Cache Hit] Reusing Gemini verdict for '{title}': {result.get('experience_verdict')}")
             else:
                 result = score_job(cfg, jd_text, pool)
                 if result:

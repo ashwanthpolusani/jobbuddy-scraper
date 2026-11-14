@@ -116,6 +116,54 @@ def discover_urls(prompt: str = "", names: str = "", file: str = "", count: int 
     subprocess.run(cmd)
 
 
+def show_logs(limit: int = 25, errors_only: bool = False, company: str = ""):
+    from scraper.config import load_config
+    from scraper.db import get_db
+
+    cfg = load_config(require_db=True, require_gemini=False)
+    db = get_db(cfg)
+    stats_col = cfg["database"]["stats_collection"]
+
+    query = {}
+    if errors_only:
+        query["fetch_success"] = False
+    if company:
+        query["company_name"] = {"$regex": company, "$options": "i"}
+
+    records = list(db[stats_col].find(query).sort("timestamp", -1).limit(limit))
+
+    print("=" * 80)
+    print("  JobBuddy Scraper - Private Telemetry Logs (from MongoDB)")
+    filter_desc = []
+    if errors_only:
+        filter_desc.append("Errors Only")
+    if company:
+        filter_desc.append(f"Company: {company}")
+    if filter_desc:
+        print(f"  Filter: {', '.join(filter_desc)}")
+    print("=" * 80)
+
+    if not records:
+        print("  No log records found matching query.")
+        return
+
+    print(f"{'Time':<19} | {'Company':<20} | {'ATS':<14} | {'Status':<7} | {'Seen':<5} | {'Saved':<5} | {'Latency':<7} | {'Details'}")
+    print("-" * 80)
+    for r in records:
+        ts = str(r.get("timestamp") or "")[:19]
+        cname = str(r.get("company_name") or "Unknown")[:20]
+        ats = str(r.get("ats_name") or "Unknown")[:14]
+        status = "OK" if r.get("fetch_success") else "FAIL"
+        seen = r.get("jobs_seen", 0)
+        saved = r.get("jobs_gemini_kept") or len(r.get("jobs_saved") or [])
+        lat = f"{r.get('fetch_time_ms', 0)}ms"
+        err = r.get("error") or ""
+        details = err[:30] if err else f"prefilter: {r.get('jobs_prefiltered', 0)}"
+
+        print(f"{ts:<19} | {cname:<20} | {ats:<14} | {status:<7} | {seen:<5} | {saved:<5} | {lat:<7} | {details}")
+    print("=" * 80)
+
+
 def run_pipeline(limit: int = 0, no_ai_fallback: bool = False):
     print("=" * 70)
     print("  Executing JobBuddy Scraper Pipeline")
@@ -166,6 +214,12 @@ def main():
     disc_p.add_argument("--count",  type=int, default=25, help="Number of companies to generate")
     disc_p.add_argument("--no-db",  action="store_true", help="Dry run without saving to DB")
 
+    # Logs (Private diagnostics)
+    logs_p = subparsers.add_parser("logs", help="View private scraper execution logs from MongoDB")
+    logs_p.add_argument("--limit", type=int, default=25, help="Number of records to show (default: 25)")
+    logs_p.add_argument("--errors-only", action="store_true", help="Filter for only failed or error scrapes")
+    logs_p.add_argument("--company", type=str, default="", help="Filter logs by company name substring")
+
     # Run
     run_p = subparsers.add_parser("run", help="Run Stage 1 and Stage 2 pipeline")
     run_p.add_argument("--limit", type=int, default=0, help="Limit number of sites/jobs to process")
@@ -186,6 +240,8 @@ def main():
             print("Error: discover requires --prompt, --names, or --file")
             sys.exit(1)
         discover_urls(args.prompt, args.names, args.file, args.count, args.no_db)
+    elif args.command == "logs":
+        show_logs(args.limit, args.errors_only, args.company)
     elif args.command == "run":
         run_pipeline(args.limit, getattr(args, "no_ai_fallback", False))
     else:
