@@ -8,7 +8,6 @@ Usage:
     python setup/push_urls.py --file my_urls.txt --clear
 """
 import argparse
-import re
 import sys
 from pathlib import Path
 

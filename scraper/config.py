@@ -6,7 +6,6 @@ All patterns are driven parametrically from config without hardcoded logic.
 import copy
 import json
 import os
-import re
 from pathlib import Path
 from dotenv import load_dotenv
 

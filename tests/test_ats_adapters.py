@@ -1,5 +1,5 @@
 """
-tests/test_ats_adapters.py - Unit and modular tests for all 9 ATS adapters:
+tests/test_ats_adapters.py - Unit and modular tests for all 8 ATS adapters:
 - Greenhouse
 - Lever
 - Ashby
@@ -8,7 +8,6 @@ tests/test_ats_adapters.py - Unit and modular tests for all 9 ATS adapters:
 - Workday
 - Eightfold
 - Uber
-- MyNextHire
 Covers standard extraction, pagination loops, HTTP errors (404, 429, 500),
 missing fields, malformed JSON, and registry dispatch without hitting live networks.
 """
@@ -27,7 +26,6 @@ from scraper.ats import (
     workday,
     eightfold,
     uber,
-    mynexthire,
     process_url,
     registry,
 )
@@ -493,47 +491,8 @@ class TestUberAdapter(unittest.TestCase):
             self.assertIn("2", ids)
 
 
-class TestMyNextHireAdapter(unittest.TestCase):
-    """Unit tests for MyNextHire ATS parser."""
-
-    def test_mynexthire_fetch_success(self):
-        payload = {
-            "reqDetailsBOList": [
-                {
-                    "reqTitle": "Associate Product Manager",
-                    "location": "Bengaluru",
-                    "reqId": 9988,
-                },
-                {
-                    "reqTitle": "SDE 1 - Backend",
-                    "location": "Gurugram",
-                    "reqId": 9989,
-                },
-            ]
-        }
-        with patch("urllib.request.urlopen", return_value=_mock_http_response(payload)):
-            jobs = mynexthire.fetch_jobs("swiggy.mynexthire.com")
-            self.assertEqual(len(jobs), 2)
-            self.assertEqual(jobs[0]["title"], "Associate Product Manager")
-            self.assertEqual(jobs[0]["location"], "Bengaluru")
-            self.assertEqual(jobs[0]["link"], "https://swiggy.mynexthire.com/employer/jobs/careers?category=9988")
-
-    def test_mynexthire_exception_returns_empty(self):
-        with patch("urllib.request.urlopen", side_effect=Exception("Server Down")):
-            jobs = mynexthire.fetch_jobs("test.mynexthire.com")
-            self.assertEqual(jobs, [])
-
-    def test_mynexthire_process_routing(self):
-        payload = {"reqDetailsBOList": [{"reqTitle": "Dev", "location": "Pune", "reqId": 1}]}
-        with patch("urllib.request.urlopen", return_value=_mock_http_response(payload)):
-            ok, jobs, ats = mynexthire.process("https://swiggy.mynexthire.com/careers")
-            self.assertTrue(ok)
-            self.assertEqual(ats, "MyNextHire")
-            self.assertEqual(len(jobs), 1)
-
-
 class TestATSRegistryIntegration(unittest.TestCase):
-    """Verify registry routing and dispatch across all 9 adapters."""
+    """Verify registry routing and dispatch across all 8 adapters."""
 
     def test_all_registered_adapters(self):
         test_urls = [
@@ -541,11 +500,11 @@ class TestATSRegistryIntegration(unittest.TestCase):
             ("https://jobs.lever.co/netflix", "Lever"),
             ("https://jobs.ashbyhq.com/retool", "Ashby"),
             ("https://careers.smartrecruiters.com/Square", "SmartRecruiters"),
+            ("https://jobs.smartrecruiters.com/SWIGGY", "SmartRecruiters"),
             ("https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite", "Workday"),
             ("https://apply.workable.com/invideo/", "Workable"),
             ("https://micron.eightfold.ai/careers", "Eightfold"),
             ("https://jobs.uber.com/en/jobs/", "Uber"),
-            ("https://swiggy.mynexthire.com/careers", "MyNextHire"),
         ]
         for url, expected_name in test_urls:
             with self.subTest(url=url, expected=expected_name):

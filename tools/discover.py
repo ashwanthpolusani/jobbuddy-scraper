@@ -238,12 +238,11 @@ We support:
 - SmartRecruiters (e.g. careers.smartrecruiters.com/<slug>)
 - Eightfold (e.g. <company>.eightfold.ai/careers)
 - Workable (e.g. apply.workable.com/<slug>)
-- MyNextHire (e.g. <company>.mynexthire.com)
 - Uber Careers
 
 Return a JSON object with:
 - "url": the exact ATS career page or API URL (or empty string if not known)
-- "ats": the name of the ATS ('Greenhouse', 'Ashby', 'Lever', 'Workday', 'SmartRecruiters', 'Eightfold', 'Workable', 'MyNextHire', 'Uber', or 'None')
+- "ats": the name of the ATS ('Greenhouse', 'Ashby', 'Lever', 'Workday', 'SmartRecruiters', 'Eightfold', 'Workable', 'Uber', or 'None')
 
 Return ONLY the raw JSON object, no markdown."""
     try:

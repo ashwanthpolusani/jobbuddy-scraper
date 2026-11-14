@@ -2,15 +2,14 @@
 scraper/ats/__init__.py - Master ATS Router and Adapter Registry.
 Maps career page URLs to standardized ATS adapters. Fully extensible.
 """
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any
 
-from scraper.ats.base import BaseATSAdapter, ATSRegistry, RawJob
+from scraper.ats.base import BaseATSAdapter, ATSRegistry
 from scraper.ats import (
     ashby,
     eightfold,
     greenhouse,
     lever,
-    mynexthire,
     smartrecruiters,
     uber,
     workable,
@@ -106,24 +105,12 @@ class UberAdapter(BaseATSAdapter):
         return jobs
 
 
-class MyNextHireAdapter(BaseATSAdapter):
-    name = "MyNextHire"
-
-    def can_handle(self, url: str) -> bool:
-        return ".mynexthire.com" in url
-
-    def fetch_jobs(self, url: str, company_name: str = "") -> List[Dict[str, Any]]:
-        _, jobs, _ = mynexthire.process(url)
-        return jobs
-
-
 # Global Registry Instance
 registry = ATSRegistry()
 registry.register(GreenhouseAdapter())
 registry.register(LeverAdapter())
 registry.register(AshbyAdapter())
 registry.register(EightfoldAdapter())
-registry.register(MyNextHireAdapter())
 registry.register(WorkdayAdapter())
 registry.register(SmartRecruitersAdapter())
 registry.register(UberAdapter())

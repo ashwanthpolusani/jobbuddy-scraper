@@ -1,6 +1,6 @@
 # Rolenaut Engine (Job Scraper)
 
-A fast, modular, config-driven job scraper engine targeting company ATS platforms directly (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Eightfold, Workable, Uber, MyNextHire). 
+A fast, modular, config-driven job scraper engine targeting company ATS platforms directly (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Eightfold, Workable, Uber). 
 
 Extracts early-career tech jobs at high speed, verifies deep job descriptions using Gemini AI, and stores clean opportunities in MongoDB Atlas.
 
@@ -239,7 +239,6 @@ Missing or deleted keys in `scraper.config.json` automatically fall back to safe
 | **Eightfold** | Paginated Search API (300ms pacing) | `*.eightfold.ai/careers` |
 | **SmartRecruiters** | Public Postings API | `api.smartrecruiters.com/v1/companies/{company}/postings` |
 | **Workable** | Widget Accounts API | `apply.workable.com/api/v1/widget/accounts/{company}` |
-| **MyNextHire** | Career Endpoints | `*.mynexthire.com` |
 | **Uber Careers** | Public Opportunities API | `uber.com/careers` |
 | **Custom / Unknown** | Intelligent Gemini AI Fallback | Any HTML career portal |
 

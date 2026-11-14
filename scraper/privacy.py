@@ -5,7 +5,6 @@ target URLs, company names, ATS slugs, or direct job links in stdout, while
 preserving complete diagnostic readability during local developer runs.
 """
 import os
-import re
 
 # Detect if running in a public CI runner (GitHub Actions, etc.)
 IS_CI = os.getenv("GITHUB_ACTIONS") == "true" or os.getenv("CI") == "true"
@@ -70,3 +69,4 @@ def format_role_deletion(index: int, total: int, title: str, reason: str, locati
 def should_display_raw_links() -> bool:
     """Returns True if raw career/job links can be displayed in console (Local runs only)."""
     return not IS_CI
+

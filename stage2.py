@@ -20,7 +20,7 @@ import time
 from scraper.config  import load_config
 from scraper.db      import get_db, now_utc, record_blocked_job, make_job_id
 from scraper.gemini  import ModelPool, clean_llm_json
-from scraper.jd_fetcher import JDFetcher, extract_core_requirements
+from scraper.jd_fetcher import JDFetcher
 from scraper.filters.eligibility import is_eligible
 from scraper.filters.pre_filter  import normalize_title_for_dedup
 from scraper.prompts import stage2_prompt as stage2_prompts
